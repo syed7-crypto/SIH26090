@@ -1,0 +1,2 @@
+"""Catalogue generation service boundary."""
+
