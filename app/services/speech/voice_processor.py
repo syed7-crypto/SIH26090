@@ -226,12 +226,14 @@ class VoiceProcessor:
         # Parse dimensions if provided
         if extracted_attrs.get("dimensions"):
             dims_str = extracted_attrs["dimensions"]
-            # Simple parsing: expected formats like "180 cm x 60 cm" or "180cm long, 60cm wide"
+            length, length_unit = _parse_measurement(dims_str, ("length", "long"))
+            width, width_unit = _parse_measurement(dims_str, ("width", "wide"))
+            height, height_unit = _parse_measurement(dims_str, ("height", "tall", "high"))
             product.dimensions = ProductDimensions(
-                length=_parse_dimension(dims_str, "length") or _parse_dimension(dims_str, "long"),
-                width=_parse_dimension(dims_str, "width") or _parse_dimension(dims_str, "wide"),
-                height=_parse_dimension(dims_str, "height") or _parse_dimension(dims_str, "tall"),
-                unit="cm",  # Default unit
+                length=length,
+                width=width,
+                height=height,
+                unit=length_unit or width_unit or height_unit,
             )
 
         # Parse weight if provided
@@ -318,6 +320,26 @@ def _parse_dimension(text: str, keyword: str) -> Optional[float]:
         return float(match.group(1))
     
     return None
+
+
+def _parse_measurement(text: str, labels: tuple[str, ...]) -> tuple[Optional[float], Optional[str]]:
+    """Parse a labeled measurement while preserving its stated unit."""
+    if not text:
+        return None, None
+
+    label_pattern = "|".join(re.escape(label) for label in labels)
+    unit_pattern = r"(?:feet|foot|ft|inches|inch|in|cm|m|meters?|g|kg|grams?|pounds?|lb)"
+    patterns = (
+        rf"(\d+(?:\.\d+)?)\s*({unit_pattern})\s*(?:{label_pattern})\b",
+        rf"(?:{label_pattern})\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*({unit_pattern})\b",
+    )
+
+    for pattern in patterns:
+        match = re.search(pattern, text.lower())
+        if match:
+            return float(match.group(1)), match.group(2)
+
+    return None, None
 
 
 # Legacy classes for backward compatibility with existing tests

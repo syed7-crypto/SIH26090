@@ -138,25 +138,11 @@ Return ONLY a valid JSON object (no markdown, no extra text) with this structure
     "usage": "product usage or null",
     "pattern": "pattern or design or null",
     "special_features": ["list", "of", "features"] or [],
-    "production_time": "time to produce or null",
-    "confidence": {
-        "name": 0.0 to 1.0,
-        "category": 0.0 to 1.0,
-        "material": 0.0 to 1.0,
-        "color": 0.0 to 1.0,
-        "craft_type": 0.0 to 1.0,
-        "description": 0.0 to 1.0,
-        "dimensions": 0.0 to 1.0,
-        "weight": 0.0 to 1.0,
-        "usage": 0.0 to 1.0,
-        "pattern": 0.0 to 1.0,
-        "special_features": 0.0 to 1.0,
-        "production_time": 0.0 to 1.0
-    }
+    "production_time": "time to produce or null"
 }
 
 Artisan description:
-{transcript}"""
+{transcript}""".replace("{transcript}", transcript)
 
             logger.debug(f"Sending transcript ({len(transcript)} chars) to Gemini for extraction")
             
@@ -170,8 +156,27 @@ Artisan description:
             # Parse JSON response
             extracted = json.loads(response_text)
             
-            # Extract confidence scores
-            confidence_scores = extracted.pop("confidence", {})
+            # The model's self-reported confidence is not a verified score.
+            extracted.pop("confidence", None)
+            confidence_fields = (
+                "name",
+                "category",
+                "subcategory",
+                "material",
+                "color",
+                "craft_type",
+                "description",
+                "dimensions",
+                "weight",
+                "usage",
+                "pattern",
+                "special_features",
+                "production_time",
+            )
+            confidence_scores = {
+                field: 1.0 if extracted.get(field) not in (None, "", []) else 0.0
+                for field in confidence_fields
+            }
             
             logger.info(f"Successfully extracted {len(extracted)} product attributes")
             return extracted, confidence_scores

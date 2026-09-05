@@ -73,5 +73,41 @@ class TestGeminiClientTranscription(unittest.TestCase):
         self.assertEqual(confidence, 0.0)
 
 
+class TestGeminiClientExtraction(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = GeminiClient.__new__(GeminiClient)
+        self.client.client = MagicMock()
+        self.client.extraction_model = "configured-extraction-model"
+
+    def test_extracts_json_and_uses_transcript_as_prompt_input(self) -> None:
+        response = MagicMock()
+        response.text = '{"name": "Silk scarf", "material": "silk", "weight": null, "confidence": {"name": 0.2}}'
+        self.client.client.models.generate_content.return_value = response
+
+        extracted, confidence = self.client.extract_product_attributes("A blue silk scarf")
+
+        self.assertEqual(extracted, {"name": "Silk scarf", "material": "silk", "weight": None})
+        self.assertEqual(confidence["name"], 1.0)
+        self.assertEqual(confidence["weight"], 0.0)
+        prompt = self.client.client.models.generate_content.call_args.kwargs["contents"]
+        self.assertIn("A blue silk scarf", prompt)
+
+    def test_extraction_failure_returns_empty_values(self) -> None:
+        self.client.client.models.generate_content.side_effect = RuntimeError("API failure")
+
+        extracted, confidence = self.client.extract_product_attributes("A silk scarf")
+
+        self.assertEqual(extracted, {})
+        self.assertEqual(confidence, {})
+
+    def test_unavailable_client_returns_empty_values(self) -> None:
+        self.client.client = None
+
+        extracted, confidence = self.client.extract_product_attributes("A silk scarf")
+
+        self.assertEqual(extracted, {})
+        self.assertEqual(confidence, {})
+
+
 if __name__ == "__main__":
     unittest.main()
