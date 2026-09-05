@@ -13,7 +13,11 @@ class TestGeminiClientTranscription(unittest.TestCase):
 
     def test_successful_transcription_uploads_audio_and_uses_configured_model(self) -> None:
         response = MagicMock()
-        response.text = "  A handwoven cotton scarf.  "
+        response.candidates = [MagicMock()]
+        response.candidates[0].content.parts = [MagicMock()]
+        response.candidates[0].content.parts[0].audio_transcription.text = (
+            "  A handwoven cotton scarf.  "
+        )
         self.client.client.models.generate_content.return_value = response
 
         transcript, confidence = self.client.transcribe_audio(b"audio bytes", "audio/mpeg")
@@ -29,10 +33,22 @@ class TestGeminiClientTranscription(unittest.TestCase):
         )
 
     def test_empty_or_inaudible_response_returns_no_transcript(self) -> None:
-        for response_text in (None, "", "[INAUDIBLE]"):
-            with self.subTest(response_text=response_text):
-                response = MagicMock()
-                response.text = response_text
+        responses = []
+        empty_part_response = MagicMock()
+        empty_part_response.candidates = [MagicMock()]
+        empty_part_response.candidates[0].content.parts = [MagicMock()]
+        empty_part_response.candidates[0].content.parts[0].audio_transcription = None
+        responses.append(empty_part_response)
+
+        for transcription_text in (None, "", "[INAUDIBLE]"):
+            response = MagicMock()
+            response.candidates = [MagicMock()]
+            response.candidates[0].content.parts = [MagicMock()]
+            response.candidates[0].content.parts[0].audio_transcription.text = transcription_text
+            responses.append(response)
+
+        for response in responses:
+            with self.subTest(response=response):
                 self.client.client.models.generate_content.return_value = response
 
                 transcript, confidence = self.client.transcribe_audio(b"audio bytes")

@@ -76,7 +76,16 @@ If you cannot understand the speech, return only: [INAUDIBLE]"""
                 contents=[file_obj, prompt],
             )
             
-            transcript = response.text.strip() if response.text else None
+            transcript = None
+            for candidate in response.candidates or []:
+                content = candidate.content
+                for part in content.parts if content else []:
+                    audio_transcription = part.audio_transcription
+                    if audio_transcription and audio_transcription.text:
+                        transcript = audio_transcription.text.strip()
+                        break
+                if transcript:
+                    break
             
             if not transcript or transcript == "[INAUDIBLE]":
                 logger.warning("Audio transcription failed or audio was inaudible")
