@@ -3,18 +3,17 @@
 Main entry point for voice processing functionality.
 """
 
-from .voice_processor import (
-    VoiceProcessor,
+from .schemas import (
     VoiceProcessingResult,
     ProductInfo,
     ProductDimensions,
     ProductWeight,
     VoiceMetadata,
-    LanguageDetector,
-    Translator,
-    ProductInfoExtractor,
-    AudioProcessor,
 )
+from .audio_processor import AudioProcessor
+from .language_detection import LanguageDetector
+from .gemini_client import GeminiClient
+from .voice_processor import VoiceProcessor, Translator, ProductInfoExtractor
 
 __all__ = [
     "VoiceProcessor",
@@ -23,8 +22,9 @@ __all__ = [
     "ProductDimensions",
     "ProductWeight",
     "VoiceMetadata",
+    "AudioProcessor",
     "LanguageDetector",
+    "GeminiClient",
     "Translator",
     "ProductInfoExtractor",
-    "AudioProcessor",
 ]
