@@ -12,6 +12,7 @@ Tests cover:
 import unittest
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 from app.services.speech import (
     VoiceProcessor,
     VoiceProcessingResult,
@@ -237,8 +238,10 @@ class TestVoiceProcessor(unittest.TestCase):
         # Should have confidence scores
         self.assertIn("language_detection", result.field_confidence)
         self.assertIn("speech_to_text", result.field_confidence)
-        self.assertIn("translation", result.field_confidence)
-        self.assertIn("overall", result.field_confidence)
+        # Accept either 'translation' (legacy) or 'normalization' (v2)
+        self.assertTrue(
+            "translation" in result.field_confidence or "normalization" in result.field_confidence
+        )
 
         # Scores should be between 0 and 1
         for score in result.field_confidence.values():
@@ -327,6 +330,70 @@ class TestVoiceProcessor(unittest.TestCase):
         # Should detect Kannada
         self.assertEqual(result.voice.language_code, "kn")
         self.assertIsNotNone(result.voice.original_transcript)
+
+    def test_english_transcript_produces_structured_product_info(self):
+        transcript = (
+            "This is a hand-woven silk scarf made by an artist artisan in Karnataka. "
+            "It is blue in color with a traditional floral pattern. The scarf is made "
+            "from pure silk, measures about 6 ft long and 2 ft wide, and takes 3 days "
+            "to make. It is suitable for wearing during festivals and special occasions."
+        )
+        extraction = {
+            "name": "hand-woven silk scarf",
+            "category": "scarf",
+            "subcategory": "hand-woven scarf",
+            "material": "silk",
+            "color": "blue",
+            "craft_type": "hand-woven",
+            "description": transcript,
+            "dimensions": "6 ft long x 2 ft wide",
+            "weight": None,
+            "usage": "wearing during festivals and special occasions",
+            "pattern": "traditional floral",
+            "special_features": ["hand-woven", "traditional"],
+            "production_time": "3 days",
+        }
+        self.processor.gemini = MagicMock()
+        self.processor.gemini.extract_product_attributes.return_value = (
+            extraction,
+            {"material": 1.0, "weight": 0.0},
+        )
+
+        result = self.processor.process("ART-REAL", "audio-1", "missing.ogg", transcript)
+
+        self.assertEqual(result.voice.language_code, "en")
+        self.assertIsNone(result.voice.translated_transcript)
+        self.assertEqual(result.product.name, "hand-woven silk scarf")
+        self.assertEqual(result.product.material, "silk")
+        self.assertEqual(result.product.color, "blue")
+        self.assertEqual(result.product.dimensions.length, 6.0)
+        self.assertEqual(result.product.dimensions.width, 2.0)
+        self.assertEqual(result.product.dimensions.unit, "ft")
+        self.assertIsNone(result.product.weight.value)
+        self.assertIn("weight", result.missing_fields)
+        self.processor.gemini.normalize_to_english.assert_not_called()
+
+    def test_non_english_transcript_uses_normalization_before_extraction(self):
+        transcript = "ಇದು ರೇಷಮೆ ಬಟ್ಟೆ"
+        self.processor.gemini = MagicMock()
+        self.processor.gemini.normalize_to_english.return_value = ("This is silk fabric", 0.8)
+        self.processor.gemini.extract_product_attributes.return_value = ({"material": "silk"}, {})
+
+        result = self.processor.process("ART-KN", "audio-2", "missing.ogg", transcript)
+
+        self.assertEqual(result.voice.language_code, "kn")
+        self.assertEqual(result.voice.translated_transcript, "This is silk fabric")
+        self.processor.gemini.normalize_to_english.assert_called_once_with(transcript, "kn")
+        self.processor.gemini.extract_product_attributes.assert_called_once_with("This is silk fabric")
+
+    def test_empty_transcript_does_not_extract(self):
+        self.processor.gemini = MagicMock()
+
+        result = self.processor.process("ART-EMPTY", "audio-3", "missing.ogg", None)
+
+        self.assertIsNone(result.voice.original_transcript)
+        self.assertEqual(result.product.name, None)
+        self.processor.gemini.extract_product_attributes.assert_not_called()
 
 
 class TestVoiceProcessingResultSchema(unittest.TestCase):

@@ -1,3 +1,5 @@
-# No runtime dependencies are required by the repository foundation yet.
-# Add a dependency only when an implemented module needs it.
+# Core dependencies for Voice & Language Intelligence module
+google-genai>=2.22.0
 
+# No other runtime dependencies required by the repository foundation.
+# Add a dependency only when an implemented module needs it.
