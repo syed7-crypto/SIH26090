@@ -7,13 +7,15 @@ from .image_processor import ImageProcessor
 from .photo_set_assessor import assess_photo_set
 from .quality_analyzer import analyze_pixels
 from .shot_classifier import ShotSignals, classify_shot
+from .gemini_client import VisionClient
 
 
 class MediaProcessor:
     """Process a product's image references without requiring a vision API."""
 
-    def __init__(self, storage_root: str = "data/uploads") -> None:
+    def __init__(self, storage_root: str = "data/uploads", vision_client: VisionClient | None = None) -> None:
         self.storage_root = storage_root
+        self.vision_client = vision_client
 
     def process(
         self,
@@ -42,7 +44,13 @@ class MediaProcessor:
             pixels, width, height = ImageProcessor.load_grayscale_pixels(storage_path, self.storage_root)
             quality = analyze_pixels(pixels, width, height)
             qualities[storage_path] = quality
-            classification = classify_shot(metadata, quality, signals_by_path.get(storage_path))
+            signals = signals_by_path.get(storage_path)
+            if signals is None and self.vision_client is not None:
+                mime_type = "image/jpeg" if metadata.format in {"jpg", "jpeg"} else f"image/{metadata.format}"
+                signals = self.vision_client.analyze_image(
+                    ImageProcessor.read_image_bytes(storage_path, self.storage_root), mime_type
+                )
+            classification = classify_shot(metadata, quality, signals)
             classifications.append(classification)
             output_images.append({
                 "image_id": metadata.image_id,
@@ -68,4 +76,3 @@ class MediaProcessor:
                 "media_readiness_score": assessment.media_readiness_score,
             },
         }
-

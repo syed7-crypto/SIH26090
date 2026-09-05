@@ -76,3 +76,10 @@ class ImageProcessor:
             pixels = list(data_reader())
         rows = [pixels[offset : offset + width] for offset in range(0, len(pixels), width)]
         return rows, width, height
+
+    @classmethod
+    def read_image_bytes(cls, storage_path: str, storage_root: str) -> bytes:
+        """Read validated image bytes for an optional provider adapter."""
+
+        path = cls.resolve_path(storage_path, storage_root)
+        return path.read_bytes()
