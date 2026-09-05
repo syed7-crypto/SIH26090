@@ -1,6 +1,7 @@
 """Gemini API client wrapper for speech, translation, and extraction."""
 
 import logging
+import io
 import os
 from typing import Optional, Dict, Any
 from pathlib import Path
@@ -29,9 +30,8 @@ class GeminiClient:
             self.client = None
         else:
             try:
-                import google.genai
-                google.genai.configure(api_key=self.api_key)
-                self.client = google.genai.Client()
+                from google import genai
+                self.client = genai.Client(api_key=self.api_key)
                 logger.info(f"Gemini client initialized. Speech model: {self.speech_model}, Extraction model: {self.extraction_model}")
             except ImportError:
                 logger.error("google-genai not installed. Install with: pip install google-genai")
@@ -57,13 +57,13 @@ class GeminiClient:
             return None, 0.0
 
         try:
-            import google.genai
+            from google.genai import types
             
-            # Use Files API to upload audio
             logger.debug(f"Uploading audio ({len(audio_bytes)} bytes) to Gemini Files API")
-            
-            # Create file object for upload
-            file_obj = google.genai.types.File(data=audio_bytes)
+            file_obj = self.client.files.upload(
+                file=io.BytesIO(audio_bytes),
+                config=types.UploadFileConfig(mime_type=mime_type),
+            )
             
             # Call Gemini for transcription
             prompt = """Transcribe the speech in this audio file exactly as spoken.
@@ -73,27 +73,18 @@ If you cannot understand the speech, return only: [INAUDIBLE]"""
             
             response = self.client.models.generate_content(
                 model=self.speech_model,
-                contents=[
-                    google.genai.types.Content(
-                        parts=[
-                            google.genai.types.Part(text=prompt),
-                            google.genai.types.Part(inline_data=google.genai.types.Blob(mime_type=mime_type, data=audio_bytes))
-                        ]
-                    )
-                ]
+                contents=[file_obj, prompt],
             )
             
             transcript = response.text.strip() if response.text else None
             
             if not transcript or transcript == "[INAUDIBLE]":
                 logger.warning("Audio transcription failed or audio was inaudible")
-                return None, 0.3
-            
-            # Gemini doesn't provide explicit confidence, estimate from response quality
-            confidence = 0.85  # Standard STT confidence for Gemini
+                return None, 0.0
             
             logger.info(f"Successfully transcribed audio: {len(transcript)} characters")
-            return transcript, confidence
+            # Gemini's generate_content response does not provide STT confidence.
+            return transcript, 0.0
             
         except Exception as e:
             logger.error(f"Error during audio transcription: {e}")
