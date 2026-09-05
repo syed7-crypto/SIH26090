@@ -11,6 +11,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from statistics import median
 from typing import Any, Iterable, Mapping
 
+from .market_references import validate_market_reference
+
 
 MONEY_PLACES = Decimal("0.01")
 
@@ -73,6 +75,7 @@ class PricingEngine:
         comparable_prices, matching_basis = self._comparable_prices(product, market_references)
         market = self._market_summary(comparable_prices)
         suggested_minimum, suggested_maximum = self._suggested_range(target_price, market)
+        market_viability = self._market_viability(target_price, market)
 
         return {
             "product_id": product_id,
@@ -90,6 +93,7 @@ class PricingEngine:
                 },
                 "desired_margin_percent": _money(desired_margin),
                 "market_reference": market,
+                "market_viability": market_viability,
                 "suggested_price": {
                     "minimum": _money(suggested_minimum),
                     "maximum": _money(suggested_maximum),
@@ -125,8 +129,7 @@ class PricingEngine:
 
         category_records: list[Mapping[str, Any]] = []
         for record in records:
-            if not isinstance(record, Mapping):
-                raise ValueError("each market reference must be an object")
+            validate_market_reference(record)
             if _normalise(record.get("category")) != category:
                 continue
             category_records.append(record)
@@ -179,6 +182,33 @@ class PricingEngine:
         anchor = max(target, Decimal(str(market_median))) if market_median is not None else target
         maximum = anchor * Decimal("1.10")
         return minimum, maximum
+
+    @staticmethod
+    def _market_viability(target: Decimal, market: Mapping[str, Any]) -> dict[str, str]:
+        """State whether the requested-margin floor can fit the market range."""
+
+        if not market["sample_size"]:
+            return {
+                "status": "no_market_data",
+                "message": "No comparable market records are available to assess price viability.",
+            }
+
+        market_minimum = Decimal(str(market["minimum"]))
+        market_maximum = Decimal(str(market["maximum"]))
+        if target > market_maximum:
+            return {
+                "status": "above_market_range",
+                "message": "The requested-margin price floor is above every matched market reference; review costs, margin, or positioning.",
+            }
+        if target < market_minimum:
+            return {
+                "status": "below_market_range",
+                "message": "The requested-margin price floor is below the matched market range; the product may support a higher market position.",
+            }
+        return {
+            "status": "within_market_range",
+            "message": "The requested-margin price floor falls within the matched market range.",
+        }
 
     @staticmethod
     def _confidence(sample_size: int, matching_basis: str) -> float:

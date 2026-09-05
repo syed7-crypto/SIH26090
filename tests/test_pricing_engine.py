@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from app.services.pricing import calculate_pricing
+from app.services.pricing import calculate_pricing, load_market_references
 
 
 class PricingEngineTests(unittest.TestCase):
@@ -28,6 +28,7 @@ class PricingEngineTests(unittest.TestCase):
         self.assertEqual(pricing["market_reference"], {"sample_size": 2, "minimum": 850.0, "maximum": 950.0, "median": 900.0})
         self.assertEqual(pricing["suggested_price"], {"minimum": 733.33, "maximum": 990.0})
         self.assertEqual(pricing["confidence"], 0.7)
+        self.assertEqual(pricing["market_viability"]["status"], "below_market_range")
         self.assertTrue(pricing["explanation"])
         json.dumps(result, ensure_ascii=False)
 
@@ -38,6 +39,7 @@ class PricingEngineTests(unittest.TestCase):
         self.assertIsNone(pricing["market_reference"]["median"])
         self.assertEqual(pricing["suggested_price"], {"minimum": 733.33, "maximum": 806.67})
         self.assertEqual(pricing["confidence"], 0.35)
+        self.assertEqual(pricing["market_viability"]["status"], "no_market_data")
 
     def test_rejects_missing_or_impossible_cost_inputs(self):
         del self.input["artisan_costs"]["other"]
@@ -47,6 +49,16 @@ class PricingEngineTests(unittest.TestCase):
         self.input["artisan_costs"]["desired_margin_percent"] = 100
         with self.assertRaisesRegex(ValueError, "less than 100"):
             calculate_pricing(self.input)
+
+    def test_flags_floor_above_market_range(self):
+        self.input["market_references"] = [
+            {"category": "handmade bags", "material": "cotton", "craft_type": "handwoven", "price": 500, "source": "approved survey"}
+        ]
+        pricing = calculate_pricing(self.input)["pricing"]
+        self.assertEqual(pricing["market_viability"]["status"], "above_market_range")
+
+    def test_default_dataset_is_deliberately_empty_and_valid(self):
+        self.assertEqual(load_market_references(), [])
 
 
 if __name__ == "__main__":

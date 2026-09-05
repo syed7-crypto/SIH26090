@@ -307,16 +307,42 @@
               "minimum": 0
             },
             "minimum": {
-              "type": "number",
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0
             },
             "maximum": {
-              "type": "number",
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0
             },
             "median": {
-              "type": "number",
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0
+            }
+          }
+        },
+        "market_viability": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "no_market_data",
+                "below_market_range",
+                "within_market_range",
+                "above_market_range"
+              ]
+            },
+            "message": {
+              "type": "string"
             }
           }
         },
