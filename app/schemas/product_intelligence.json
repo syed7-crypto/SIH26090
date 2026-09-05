@@ -106,6 +106,12 @@
           "type": "number",
           "minimum": 0,
           "maximum": 100
+        },
+        "recommended_primary_path": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
