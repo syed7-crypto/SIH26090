@@ -22,6 +22,19 @@ class TestQualityAnalyzer(unittest.TestCase):
         self.assertGreaterEqual(result.quality_score, 0)
         self.assertLessEqual(result.quality_score, 100)
 
+    def test_subject_contrast_improves_estimated_visibility(self):
+        flat = [[128.0] * 20 for _ in range(20)]
+        separated = [row[:] for row in flat]
+        for y in range(5, 15):
+            for x in range(5, 15):
+                separated[y][x] = 20.0
+
+        flat_result = analyze_pixels(flat, 20, 20)
+        separated_result = analyze_pixels(separated, 20, 20)
+
+        self.assertIsNotNone(separated_result.visibility_score)
+        self.assertGreater(separated_result.visibility_score, flat_result.visibility_score)
+
 
 class TestImageProcessor(unittest.TestCase):
     def test_path_traversal_is_rejected(self):

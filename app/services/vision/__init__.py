@@ -2,6 +2,7 @@
 
 from .image_processor import ImageProcessor
 from .media_processor import MediaProcessor
+from .media_contract import validate_media_output
 from .duplicate_detector import DuplicateDetector, DuplicateResult
 from .photo_set_assessor import PhotoSetAssessment, assess_photo_set
 from .quality_analyzer import analyze_pixels
@@ -11,6 +12,7 @@ from .shot_classifier import ShotClassification, ShotSignals, classify_shot
 __all__ = [
     "ImageProcessor",
     "MediaProcessor",
+    "validate_media_output",
     "ImageMetadata",
     "ImageQuality",
     "DuplicateDetector",

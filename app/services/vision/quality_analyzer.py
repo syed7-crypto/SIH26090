@@ -3,6 +3,7 @@
 from math import log10
 
 from .schemas import ImageQuality
+from .visibility_analyzer import estimate_visibility
 
 
 def _clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -49,6 +50,7 @@ def analyze_pixels(pixels: list[list[float]], width: int, height: int) -> ImageQ
     resolution_score = _clamp(megapixels * 100.0 / 2.0)
     aspect_ratio = width / height if height else 0.0
     framing_score = _clamp(100.0 - abs(aspect_ratio - 1.0) * 35.0)
+    visibility_score, _, visibility_issues = estimate_visibility(pixels, width, height)
 
     issues: list[str] = []
     if blur_score < 35:
@@ -57,6 +59,7 @@ def analyze_pixels(pixels: list[list[float]], width: int, height: int) -> ImageQ
         issues.append("poor_exposure")
     if resolution_score < 50:
         issues.append("low_resolution")
+    issues.extend(visibility_issues)
 
     quality_score = round(
         0.40 * blur_score
@@ -71,6 +74,6 @@ def analyze_pixels(pixels: list[list[float]], width: int, height: int) -> ImageQ
         brightness_score=round(brightness_score, 2),
         resolution_score=round(resolution_score, 2),
         framing_score=round(framing_score, 2),
+        visibility_score=visibility_score,
         issues=tuple(issues),
     )
-

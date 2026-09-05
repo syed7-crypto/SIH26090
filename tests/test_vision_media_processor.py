@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from app.services.vision import MediaProcessor, ShotSignals
+from app.services.vision import MediaProcessor, ShotSignals, validate_media_output
 
 
 class TestMediaProcessor(unittest.TestCase):
@@ -29,6 +29,7 @@ class TestMediaProcessor(unittest.TestCase):
             )
 
             self.assertEqual(result["product_id"], "ART-001")
+            validate_media_output(result)
             media = result["media"]
             self.assertEqual(len(media["images"]), 2)
             self.assertIn("primary", media["available_types"])
@@ -49,6 +50,18 @@ class TestMediaProcessor(unittest.TestCase):
 
             self.assertFalse(result["media"]["images"][0]["is_duplicate"])
             self.assertTrue(result["media"]["images"][1]["is_duplicate"])
+
+    def test_contract_validator_rejects_invalid_quality(self):
+        with self.assertRaises(ValueError):
+            validate_media_output({
+                "product_id": "ART-003",
+                "media": {
+                    "images": [{"image_id": "img", "storage_path": "a.png", "quality_score": 101}],
+                    "available_types": [],
+                    "missing_types": [],
+                    "media_readiness_score": 50,
+                },
+            })
 
 
 if __name__ == "__main__":
