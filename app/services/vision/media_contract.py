@@ -48,4 +48,6 @@ def validate_media_output(output: dict[str, Any]) -> None:
     readiness = media.get("media_readiness_score")
     if not isinstance(readiness, (int, float)) or not 0 <= readiness <= 100:
         raise ValueError("media_readiness_score must be between 0 and 100")
-
+    primary_path = media.get("recommended_primary_path")
+    if primary_path is not None and not isinstance(primary_path, str):
+        raise ValueError("recommended_primary_path must be a string or null")

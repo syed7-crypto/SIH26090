@@ -8,20 +8,28 @@ from .photo_set_assessor import assess_photo_set
 from .quality_analyzer import analyze_pixels
 from .shot_classifier import ShotSignals, classify_shot
 from .gemini_client import VisionClient
+from .primary_image import PrimaryImageProcessor
 
 
 class MediaProcessor:
     """Process a product's image references without requiring a vision API."""
 
-    def __init__(self, storage_root: str = "data/uploads", vision_client: VisionClient | None = None) -> None:
+    def __init__(
+        self,
+        storage_root: str = "data/uploads",
+        vision_client: VisionClient | None = None,
+        primary_processor: PrimaryImageProcessor | None = None,
+    ) -> None:
         self.storage_root = storage_root
         self.vision_client = vision_client
+        self.primary_processor = primary_processor
 
     def process(
         self,
         product_id: str,
         images: list[dict[str, str]],
         signals_by_path: dict[str, ShotSignals] | None = None,
+        create_primary: bool = False,
     ) -> dict[str, Any]:
         """Return ``product_id`` and a schema-compatible ``media`` fragment.
 
@@ -64,6 +72,11 @@ class MediaProcessor:
             })
 
         assessment = assess_photo_set(classifications, qualities, duplicate_paths)
+        recommended_primary_path = None
+        if create_primary and assessment.recommended_primary:
+            if self.primary_processor is None:
+                raise ValueError("create_primary requires a primary_processor")
+            recommended_primary_path = self.primary_processor.process(assessment.recommended_primary)
         for output_image in output_images:
             output_image["is_recommended_primary"] = output_image["storage_path"] == assessment.recommended_primary
 
@@ -74,5 +87,6 @@ class MediaProcessor:
                 "available_types": list(assessment.available_types),
                 "missing_types": list(assessment.missing_types),
                 "media_readiness_score": assessment.media_readiness_score,
+                "recommended_primary_path": recommended_primary_path,
             },
         }

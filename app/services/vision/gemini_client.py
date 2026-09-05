@@ -15,7 +15,7 @@ class VisionClient:
 
     def __init__(self, api_key: str | None = None, model: str | None = None) -> None:
         self.api_key = api_key or os.getenv("GEMINI_VISION_KEY")
-        self.model = model or os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash")
+        self.model = model or os.getenv("GEMINI_VISION_MODEL", "gemini-3.6-flash")
         self.client = None
         if self.api_key:
             try:
@@ -60,4 +60,3 @@ Do not identify the product or invent details."""
         except Exception as exc:
             logger.warning("Gemini Vision analysis failed: %s", exc)
             return None
-

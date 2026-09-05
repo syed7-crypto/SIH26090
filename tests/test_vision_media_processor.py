@@ -5,6 +5,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from app.services.vision import MediaProcessor, ShotSignals, validate_media_output
+from app.services.vision import PrimaryImageProcessor
 
 
 class TestMediaProcessor(unittest.TestCase):
@@ -50,6 +51,26 @@ class TestMediaProcessor(unittest.TestCase):
 
             self.assertFalse(result["media"]["images"][0]["is_duplicate"])
             self.assertTrue(result["media"]["images"][1]["is_duplicate"])
+
+    def test_process_can_generate_and_report_clean_primary_path(self):
+        class FakeRemover:
+            def remove(self, image_bytes: bytes) -> bytes:
+                return image_bytes
+
+        with tempfile.TemporaryDirectory() as root:
+            source = self._write_image(root, "source.png", 0)
+            result = MediaProcessor(
+                root,
+                primary_processor=PrimaryImageProcessor(root, FakeRemover()),
+            ).process(
+                "ART-005",
+                [{"image_id": "img-5", "storage_path": source}],
+                create_primary=True,
+            )
+
+            self.assertEqual(result["media"]["recommended_primary_path"], "source_primary.png")
+            validate_media_output(result)
+            self.assertTrue((Path(root) / "source_primary.png").exists())
 
     def test_contract_validator_rejects_invalid_quality(self):
         with self.assertRaises(ValueError):
