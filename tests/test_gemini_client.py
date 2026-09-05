@@ -89,8 +89,10 @@ class TestGeminiClientExtraction(unittest.TestCase):
         self.assertEqual(extracted, {"name": "Silk scarf", "material": "silk", "weight": None})
         self.assertEqual(confidence["name"], 1.0)
         self.assertEqual(confidence["weight"], 0.0)
-        prompt = self.client.client.models.generate_content.call_args.kwargs["contents"]
+        call_kwargs = self.client.client.models.generate_content.call_args.kwargs
+        prompt = call_kwargs["contents"]
         self.assertIn("A blue silk scarf", prompt)
+        self.assertEqual(call_kwargs["config"].http_options.timeout, 45000)
 
     def test_extraction_failure_returns_empty_values(self) -> None:
         self.client.client.models.generate_content.side_effect = RuntimeError("API failure")

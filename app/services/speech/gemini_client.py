@@ -115,7 +115,7 @@ If you cannot understand the speech, return only: [INAUDIBLE]"""
             return {}, {}
 
         try:
-            import google.genai
+            from google.genai import types
             import json
             
             prompt = """You are an expert at extracting product information from artisan descriptions.
@@ -148,7 +148,10 @@ Artisan description:
             
             response = self.client.models.generate_content(
                 model=self.extraction_model,
-                contents=prompt
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    http_options=types.HttpOptions(timeout=45000)
+                ),
             )
             
             response_text = response.text.strip() if response.text else "{}"
