@@ -1,4 +1,5 @@
-"""Loading and validation for the MVP's maintained market-reference data."""
+jls_extract_var = """Loading and validation for the MVP's maintained market-reference data."""
+jls_extract_var
 
 from __future__ import annotations
 
