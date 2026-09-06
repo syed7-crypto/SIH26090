@@ -8,6 +8,7 @@ class PricingEngineTests(unittest.TestCase):
     def setUp(self):
         self.input = {
             "product_id": "ART-001",
+            "currency": "INR",
             "product": {"category": "Handmade Bags", "material": "Cotton", "craft_type": "Handwoven"},
             "artisan_costs": {
                 "material": 300, "labour_hours": 4, "labour_rate_per_hour": 50,
@@ -25,8 +26,10 @@ class PricingEngineTests(unittest.TestCase):
         pricing = result["pricing"]
         self.assertEqual(result["product_id"], "ART-001")
         self.assertEqual(pricing["costs"], {"material": 300.0, "labour": 200.0, "packaging": 30.0, "other": 20.0, "total": 550.0})
-        self.assertEqual(pricing["market_reference"], {"sample_size": 2, "minimum": 850.0, "maximum": 950.0, "median": 900.0})
-        self.assertEqual(pricing["suggested_price"], {"minimum": 733.33, "maximum": 990.0})
+        self.assertEqual(pricing["market_reference"], {"sample_size": 2, "minimum": 850.0, "maximum": 950.0, "median": 900.0, "sources": ["local survey", "catalogue"]})
+        self.assertEqual(pricing["suggested_price"], {"minimum": 740.0, "maximum": 990.0})
+        self.assertEqual(pricing["currency"], "INR")
+        self.assertEqual(pricing["margin_type"], "gross_margin")
         self.assertEqual(pricing["confidence"], 0.7)
         self.assertEqual(pricing["market_viability"]["status"], "below_market_range")
         self.assertTrue(pricing["explanation"])
@@ -37,7 +40,7 @@ class PricingEngineTests(unittest.TestCase):
         pricing = calculate_pricing(self.input)["pricing"]
         self.assertEqual(pricing["market_reference"]["sample_size"], 0)
         self.assertIsNone(pricing["market_reference"]["median"])
-        self.assertEqual(pricing["suggested_price"], {"minimum": 733.33, "maximum": 806.67})
+        self.assertEqual(pricing["suggested_price"], {"minimum": 740.0, "maximum": 810.0})
         self.assertEqual(pricing["confidence"], 0.35)
         self.assertEqual(pricing["market_viability"]["status"], "no_market_data")
 
@@ -59,6 +62,41 @@ class PricingEngineTests(unittest.TestCase):
 
     def test_default_dataset_is_deliberately_empty_and_valid(self):
         self.assertEqual(load_market_references(), [])
+
+    def test_rejects_market_record_without_reviewable_source(self):
+        self.input["market_references"][0].pop("source")
+        with self.assertRaisesRegex(ValueError, "source must be a non-empty string"):
+            calculate_pricing(self.input)
+
+    def test_returns_no_market_data_when_product_category_is_unavailable(self):
+        self.input["product"]["category"] = None
+        pricing = calculate_pricing(self.input)["pricing"]
+        self.assertEqual(pricing["market_reference"]["sample_size"], 0)
+        self.assertEqual(pricing["market_viability"]["status"], "no_market_data")
+
+    def test_excludes_incompatible_comparables_instead_of_falling_back(self):
+        self.input["market_references"] = [
+            {"category": "handmade bags", "material": "leather", "craft_type": "hand stitched", "price": 1400, "source": "approved survey"}
+        ]
+        pricing = calculate_pricing(self.input)["pricing"]
+        self.assertEqual(pricing["market_reference"]["sample_size"], 0)
+
+    def test_all_zero_costs_remain_zero_only_when_artisan_entered_zeros(self):
+        self.input["artisan_costs"] = {
+            "material": 0, "labour_hours": 0, "labour_rate_per_hour": 0,
+            "packaging": 0, "other": 0, "desired_margin_percent": 25,
+        }
+        pricing = calculate_pricing(self.input)["pricing"]
+        self.assertEqual(pricing["costs"]["total"], 0.0)
+        self.assertEqual(pricing["suggested_price"]["minimum"], 0.0)
+
+    def test_rejects_an_implicit_or_unsupported_currency(self):
+        del self.input["currency"]
+        with self.assertRaisesRegex(ValueError, "currency must be INR"):
+            calculate_pricing(self.input)
+        self.input["currency"] = "USD"
+        with self.assertRaisesRegex(ValueError, "currency must be INR"):
+            calculate_pricing(self.input)
 
 
 if __name__ == "__main__":

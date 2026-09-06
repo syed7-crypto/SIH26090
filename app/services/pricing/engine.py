@@ -7,7 +7,7 @@ records, making every number reproducible and suitable for review.
 
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 from statistics import median
 from typing import Any, Iterable, Mapping
 
@@ -15,6 +15,8 @@ from .market_references import validate_market_reference
 
 
 MONEY_PLACES = Decimal("0.01")
+PRICE_ROUNDING_INCREMENT = Decimal("10")
+SUPPORTED_CURRENCY = "INR"
 
 
 def _money(value: Decimal | int | float | str) -> float:
@@ -41,6 +43,7 @@ class PricingEngine:
         product: Mapping[str, Any],
         artisan_costs: Mapping[str, Any],
         market_references: Iterable[Mapping[str, Any]],
+        currency: str,
     ) -> dict[str, Any]:
         """Return the pricing-owned JSON fragment for one product.
 
@@ -56,6 +59,8 @@ class PricingEngine:
             raise ValueError("product must be an object")
         if not isinstance(artisan_costs, Mapping):
             raise ValueError("artisan_costs must be an object")
+        if currency != SUPPORTED_CURRENCY:
+            raise ValueError(f"currency must be {SUPPORTED_CURRENCY} for the MVP")
         if isinstance(market_references, (str, bytes)):
             raise ValueError("market_references must be an array of objects")
         try:
@@ -65,6 +70,9 @@ class PricingEngine:
 
         values = {field: self._non_negative(artisan_costs, field) for field in self.COST_FIELDS}
         desired_margin = self._non_negative(artisan_costs, "desired_margin_percent")
+        margin_type = artisan_costs.get("margin_type", "gross_margin")
+        if margin_type != "gross_margin":
+            raise ValueError("artisan_costs.margin_type must be gross_margin")
         if desired_margin >= Decimal("100"):
             raise ValueError("desired_margin_percent must be less than 100")
 
@@ -72,8 +80,8 @@ class PricingEngine:
         total_cost = values["material"] + labour_cost + values["packaging"] + values["other"]
         target_price = total_cost / (Decimal("1") - (desired_margin / Decimal("100")))
 
-        comparable_prices, matching_basis = self._comparable_prices(product, market_references)
-        market = self._market_summary(comparable_prices)
+        comparable_prices, sources, matching_basis = self._comparable_prices(product, market_references)
+        market = self._market_summary(comparable_prices, sources)
         suggested_minimum, suggested_maximum = self._suggested_range(target_price, market)
         market_viability = self._market_viability(target_price, market)
 
@@ -92,6 +100,8 @@ class PricingEngine:
                     "rate_per_hour": _money(values["labour_rate_per_hour"]),
                 },
                 "desired_margin_percent": _money(desired_margin),
+                "margin_type": margin_type,
+                "currency": currency,
                 "market_reference": market,
                 "market_viability": market_viability,
                 "suggested_price": {
@@ -120,12 +130,12 @@ class PricingEngine:
 
     def _comparable_prices(
         self, product: Mapping[str, Any], records: Iterable[Mapping[str, Any]]
-    ) -> tuple[list[Decimal], str]:
+    ) -> tuple[list[Decimal], list[str], str]:
         category = _normalise(product.get("category"))
         material = _normalise(product.get("material"))
         craft_type = _normalise(product.get("craft_type"))
         if not category:
-            return [], "none (product category is unavailable)"
+            return [], [], "none (product category is unavailable)"
 
         category_records: list[Mapping[str, Any]] = []
         for record in records:
@@ -142,13 +152,14 @@ class PricingEngine:
             if (not material or not _normalise(record.get("material")) or _normalise(record.get("material")) == material)
             and (not craft_type or not _normalise(record.get("craft_type")) or _normalise(record.get("craft_type")) == craft_type)
         ]
-        selected = filtered or category_records
+        selected = filtered
         basis = "category"
         if selected and filtered and (material or craft_type):
             details = [name for name, value in (("material", material), ("craft type", craft_type)) if value]
             basis = "category and " + " / ".join(details)
 
         prices: list[Decimal] = []
+        sources: list[str] = []
         for record in selected:
             if "price" not in record:
                 raise ValueError("each selected market reference requires price")
@@ -159,17 +170,22 @@ class PricingEngine:
             if not price.is_finite() or price < 0:
                 raise ValueError("market reference price must be finite and non-negative")
             prices.append(price)
-        return prices, basis if prices else "none (no matching category records)"
+            source = record["source"].strip()
+            if source not in sources:
+                sources.append(source)
+        no_match_basis = "none (no attribute-compatible category records)"
+        return prices, sources, basis if prices else no_match_basis
 
     @staticmethod
-    def _market_summary(prices: list[Decimal]) -> dict[str, Any]:
+    def _market_summary(prices: list[Decimal], sources: list[str]) -> dict[str, Any]:
         if not prices:
-            return {"sample_size": 0, "minimum": None, "maximum": None, "median": None}
+            return {"sample_size": 0, "minimum": None, "maximum": None, "median": None, "sources": []}
         return {
             "sample_size": len(prices),
             "minimum": _money(min(prices)),
             "maximum": _money(max(prices)),
             "median": _money(median(prices)),
+            "sources": sources,
         }
 
     @staticmethod
@@ -177,11 +193,20 @@ class PricingEngine:
         # The lower bound is never below the price needed to achieve the
         # artisan's requested margin.  If comparable prices support a higher
         # position, their median informs the upper end of the range.
-        minimum = target
+        minimum = PricingEngine._round_customer_price(target)
         market_median = market["median"]
         anchor = max(target, Decimal(str(market_median))) if market_median is not None else target
-        maximum = anchor * Decimal("1.10")
+        maximum = PricingEngine._round_customer_price(anchor * Decimal("1.10"))
         return minimum, maximum
+
+    @staticmethod
+    def _round_customer_price(value: Decimal) -> Decimal:
+        """Round up to a customer-friendly ₹10 price without reducing margin."""
+
+        return (
+            (value / PRICE_ROUNDING_INCREMENT).to_integral_value(rounding=ROUND_CEILING)
+            * PRICE_ROUNDING_INCREMENT
+        )
 
     @staticmethod
     def _market_viability(target: Decimal, market: Mapping[str, Any]) -> dict[str, str]:
@@ -251,4 +276,5 @@ def calculate_pricing(input_data: Mapping[str, Any]) -> dict[str, Any]:
         product=input_data.get("product"),
         artisan_costs=input_data.get("artisan_costs"),
         market_references=input_data.get("market_references", []),
+        currency=input_data.get("currency"),
     )

@@ -299,6 +299,18 @@
           "type": "number",
           "minimum": 0
         },
+        "margin_type": {
+          "type": "string",
+          "enum": [
+            "gross_margin"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "INR"
+          ]
+        },
         "market_reference": {
           "type": "object",
           "properties": {
@@ -326,6 +338,12 @@
                 "null"
               ],
               "minimum": 0
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
