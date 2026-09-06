@@ -177,7 +177,7 @@ class PricingEngine:
         return prices, sources, basis if prices else no_match_basis
 
     @staticmethod
-    def _market_summary(prices: list[Decimal], sources: list[str]) -> dict[str, Any]:
+    def _market_summary(prices: list[Decimal]) -> dict[str, Any]:
         if not prices:
             return {"sample_size": 0, "minimum": None, "maximum": None, "median": None, "sources": []}
         return {
