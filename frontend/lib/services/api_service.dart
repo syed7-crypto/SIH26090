@@ -20,7 +20,7 @@ class ApiException implements Exception {
 
 class ApiService {
   ApiService({String? baseUrl, http.Client? client})
-    : baseUrl = baseUrl ?? ApiConstants.baseUrl,
+    : baseUrl = baseUrl ?? 'http://localhost:8000',
       _client = client ?? http.Client();
 
   final String baseUrl;
@@ -56,6 +56,7 @@ class ApiService {
       }
 
       final decoded = jsonDecode(body);
+      print('PHOTO API RESPONSE: $body');
       if (decoded is! Map<String, dynamic>) {
         throw const ApiException('The server returned an invalid response.');
       }
