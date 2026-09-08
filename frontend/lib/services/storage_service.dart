@@ -18,11 +18,16 @@ class StorageService {
     final preferences = await SharedPreferences.getInstance();
     final raw = preferences.getString(_productsKey);
     if (raw == null) return [];
-    final values = jsonDecode(raw) as List;
-    return values
-        .cast<Map<String, dynamic>>()
-        .map(ProductDraft.fromJson)
-        .toList();
+    try {
+      final values = jsonDecode(raw) as List;
+      return values
+          .map((value) => ProductDraft.fromJson(Map<String, dynamic>.from(value as Map)))
+          .toList();
+    } on FormatException {
+      return [];
+    } on TypeError {
+      return [];
+    }
   }
 
   Future<void> saveProducts(List<ProductDraft> products) async {
@@ -49,9 +54,16 @@ class StorageService {
       (await SharedPreferences.getInstance()).setBool(_onboardingKey, true);
   Future<Artisan> loadArtisan() async {
     final raw = (await SharedPreferences.getInstance()).getString(_artisanKey);
-    return raw == null
-        ? const Artisan()
-        : Artisan.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    if (raw == null) return const Artisan();
+    try {
+      return Artisan.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } on FormatException {
+      return const Artisan();
+    } on TypeError {
+      return const Artisan();
+    }
   }
 
   Future<void> saveArtisan(Artisan artisan) async =>
@@ -64,9 +76,16 @@ class StorageService {
     final raw = (await SharedPreferences.getInstance()).getString(
       _activeDraftKey,
     );
-    return raw == null
-        ? null
-        : ProductDraft.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    if (raw == null) return null;
+    try {
+      return ProductDraft.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
   }
 
   Future<void> saveActiveDraft(ProductDraft? draft) async {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_scope.dart';
 import '../core/app_theme.dart';
 import '../models/product_draft.dart';
+import '../widgets/common/local_product_image.dart';
 import 'add_product.dart';
 import 'home.dart';
 
@@ -24,47 +25,53 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      const ArtisanHomePage(),
-      const _ProductsPage(),
-      const SizedBox.shrink(),
-      const _MarketplacePage(),
-      const _ProfilePage(),
-    ];
-    return Scaffold(
-      body: IndexedStack(index: _index, children: pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) =>
-            value == 2 ? _create() : setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+    final state = AppScope.of(context);
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final pages = [
+          const ArtisanHomePage(),
+          const _ProductsPage(),
+          const SizedBox.shrink(),
+          const _MarketplacePage(),
+          const _ProfilePage(),
+        ];
+        return Scaffold(
+          body: IndexedStack(index: _index, children: pages),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (value) =>
+                value == 2 ? _create() : setState(() => _index = value),
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.inventory_2_outlined),
+                selectedIcon: const Icon(Icons.inventory_2),
+                label: state.translate('products'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.add_circle_outline),
+                selectedIcon: const Icon(Icons.add_circle),
+                label: state.translate('create'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.storefront_outlined),
+                selectedIcon: const Icon(Icons.storefront),
+                label: state.translate('marketplace'),
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.person_outline),
+                selectedIcon: const Icon(Icons.person),
+                label: state.translate('profile'),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
-            label: 'Products',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Create',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
-            label: 'Marketplace',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -80,7 +87,8 @@ class _ProductsPageState extends State<_ProductsPage> {
   ProductStatus? _filter;
   @override
   Widget build(BuildContext context) {
-    final products = AppScope.of(context).products
+    final state = AppScope.of(context);
+    final products = state.products
         .where(
           (product) =>
               (_filter == null || product.status == _filter) &&
@@ -88,7 +96,7 @@ class _ProductsPageState extends State<_ProductsPage> {
         )
         .toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('My Products')),
+      appBar: AppBar(title: Text(state.translate('products'))),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -204,15 +212,12 @@ class _ProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              LocalProductImage(
+                path: product.photoPaths.isEmpty
+                    ? null
+                    : product.photoPaths.first,
                 height: 88,
-                decoration: BoxDecoration(
-                  color: AppTheme.sage.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Icon(Icons.photo_outlined, size: 34),
-                ),
+                width: double.infinity,
               ),
               const Spacer(),
               Text(
@@ -226,7 +231,7 @@ class _ProductCard extends StatelessWidget {
                     ? 'Price not set'
                     : '₹${product.price!.toStringAsFixed(0)}',
               ),
-              Chip(label: Text(product.status.name)),
+              _StatusChip(status: product.status),
             ],
           ),
         ),
@@ -296,10 +301,9 @@ class _ProfilePage extends StatelessWidget {
       'Telugu',
       'Bengali',
       'Malayalam',
-      'Others',
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(state.translate('profile'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -362,6 +366,13 @@ class _ProfilePage extends StatelessWidget {
             title: 'Privacy',
             subtitle: 'Your data and permissions',
           ),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: Text(state.translate('settings')),
+            subtitle: const Text('Language, notifications and voice guidance'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).pushNamed('/settings'),
+          ),
           OutlinedButton.icon(
             onPressed: () => showDialog<void>(
               context: context,
@@ -407,4 +418,27 @@ class _SettingRow extends StatelessWidget {
       SnackBar(content: Text('$title settings will be available here.')),
     ),
   );
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+  final ProductStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final (color, label) = switch (status) {
+      ProductStatus.draft => (AppTheme.terracotta, state.translate('draft')),
+      ProductStatus.ready => (AppTheme.sage, state.translate('ready')),
+      ProductStatus.published => (
+        Colors.green.shade700,
+        state.translate('published'),
+      ),
+    };
+    return Chip(
+      backgroundColor: color.withValues(alpha: .14),
+      side: BorderSide(color: color.withValues(alpha: .35)),
+      label: Text(label, style: TextStyle(color: color)),
+    );
+  }
 }

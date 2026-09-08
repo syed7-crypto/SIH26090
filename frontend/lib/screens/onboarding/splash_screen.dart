@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../state/app_state.dart';
+import '../../widgets/common/karigar_design.dart';
 import '../app_shell.dart';
 import 'onboarding_flow.dart';
 
@@ -37,18 +38,35 @@ class _SplashScreenState extends State<SplashScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 38,
-            backgroundColor: AppColors.deepForestGreen,
-            child: Icon(Icons.auto_awesome, color: Colors.white, size: 38),
-          ),
+          BrandMark(size: 78),
           SizedBox(height: 16),
           Text(
             'KarigarAI',
             style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
           ),
           SizedBox(height: 8),
-          Text('Your craft, ready for the world.'),
+          Text(
+            'Tradition Meets Technology',
+            style: TextStyle(
+              color: AppColors.sageGreen,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Empowering Artisans For a Brighter Tomorrow',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.secondaryText),
+          ),
+          SizedBox(height: 28),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              color: AppColors.mutedTerracotta,
+              strokeWidth: 3,
+            ),
+          ),
         ],
       ),
     ),

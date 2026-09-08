@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'theme/app_colors.dart';
+
 abstract final class AppTheme {
-  static const forest = Color(0xFF123C35);
-  static const sage = Color(0xFF1F5C50);
-  static const terracotta = Color(0xFFC8753D);
-  static const ivory = Color(0xFFF8F5EF);
-  static const charcoal = Color(0xFF17201D);
-  static const secondaryText = Color(0xFF66716C);
-  static const border = Color(0xFFE5E0D7);
-  static const success = Color(0xFF3E7658);
+  static const forest = AppColors.deepForestGreen;
+  static const sage = AppColors.sageGreen;
+  static const terracotta = AppColors.mutedTerracotta;
+  static const ivory = AppColors.ivory;
+  static const charcoal = AppColors.charcoal;
+  static const secondaryText = AppColors.secondaryText;
+  static const border = AppColors.border;
+  static const success = AppColors.success;
 
   static ThemeData get light => ThemeData(
     useMaterial3: true,
@@ -16,23 +18,27 @@ abstract final class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: forest,
       primary: forest,
-      secondary: terracotta,
+      secondary: sage,
+      tertiary: terracotta,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: ivory,
       foregroundColor: charcoal,
       elevation: 0,
+      centerTitle: false,
     ),
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: border),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        backgroundColor: terracotta,
+        foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),

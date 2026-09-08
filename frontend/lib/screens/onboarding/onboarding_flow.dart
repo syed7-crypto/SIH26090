@@ -31,12 +31,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (_step == 1) {
       return LanguageSelectScreen(
         selected: _language,
-        onSelected: (value) {
-          widget.state.setLanguage(value);
-          setState(() {
-            _language = value;
-            _step = 2;
-          });
+        onSelected: (value) => setState(() => _language = value),
+        onContinue: () {
+          widget.state.setLanguage(_language);
+          setState(() => _step = 2);
         },
       );
     }

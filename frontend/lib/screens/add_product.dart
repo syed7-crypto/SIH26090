@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../app_scope.dart';
 import '../screens/photo_analysis_results.dart';
 import '../services/api_service.dart';
+import '../widgets/common/karigar_design.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key, this.apiService});
@@ -113,15 +114,24 @@ class _AddProductPageState extends State<AddProductPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const FlowStepper(currentStep: 1),
+                    const SizedBox(height: 24),
                     Text(
-                      'Show us your product',
+                      'Add Your Product Photos',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Show us your product',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Text(
-                      'Add clear photos of your product. You can add photos from your gallery or take new ones.',
+                      'Take multiple photos from different angles. Add exactly 2 clear product photos.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         height: 1.45,
                         color: theme.colorScheme.onSurfaceVariant,

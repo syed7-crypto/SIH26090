@@ -1,15 +1,21 @@
 class Artisan {
   const Artisan({
-    this.name = '',
-    this.craftType = '',
-    this.region = '',
+    this.name = 'Artisan',
+    this.craftType = 'Handicrafts',
+    this.region = 'India',
     this.language = 'English',
   });
 
   factory Artisan.fromJson(Map<String, dynamic> json) => Artisan(
-    name: json['name'] as String? ?? '',
-    craftType: json['craftType'] as String? ?? '',
-    region: json['region'] as String? ?? '',
+    name: (json['name'] as String?)?.trim().isNotEmpty == true
+        ? json['name'] as String
+        : 'Artisan',
+    craftType: (json['craftType'] as String?)?.trim().isNotEmpty == true
+        ? json['craftType'] as String
+        : 'Handicrafts',
+    region: (json['region'] as String?)?.trim().isNotEmpty == true
+        ? json['region'] as String
+        : 'India',
     language: json['language'] as String? ?? 'English',
   );
 

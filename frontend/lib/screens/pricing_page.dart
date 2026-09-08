@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
 import '../models/product_draft.dart';
-import 'listing_page.dart';
+import 'readiness_page.dart';
 
 class PricingPage extends StatefulWidget {
   const PricingPage({super.key});
@@ -31,13 +31,18 @@ class _PricingPageState extends State<PricingPage> {
     final state = AppScope.of(context);
     final draft = state.activeDraft;
     if (draft != null) {
+      final pricedDraft = draft.copyWith(price: value);
       await state.updateDraft(
-        draft.copyWith(price: value, status: ProductStatus.ready),
+        pricedDraft.copyWith(
+          status: pricedDraft.readiness >= 80
+              ? ProductStatus.ready
+              : ProductStatus.draft,
+        ),
       );
     }
     if (mounted) {
       Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => const ListingPage()));
+          .push(MaterialPageRoute<void>(builder: (_) => const ReadinessPage()));
     }
   }
 
@@ -49,7 +54,8 @@ class _PricingPageState extends State<PricingPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Set your price')),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +86,7 @@ class _PricingPageState extends State<PricingPage> {
                   padding: const EdgeInsets.only(top: 20),
                   child: Text('Listing readiness: $readiness%'),
                 ),
-              const Spacer(),
+              const SizedBox(height: 36),
               FilledButton(
                 onPressed: _continue,
                 child: const Text('Review listing'),

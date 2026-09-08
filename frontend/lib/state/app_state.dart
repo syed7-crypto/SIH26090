@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/product_draft.dart';
+import '../core/constants/languages.dart';
 import '../services/storage_service.dart';
 
 class AppState extends ChangeNotifier {
@@ -16,6 +17,7 @@ class AppState extends ChangeNotifier {
 
   List<ProductDraft> get products => List.unmodifiable(_products);
   String get language => _language;
+  String get languageCode => languageCodeFor(_language);
   ProductDraft? get activeDraft => _activeDraft;
   bool get onboardingComplete => _onboardingComplete;
   bool get notificationsEnabled => _notificationsEnabled;
@@ -57,11 +59,29 @@ class AppState extends ChangeNotifier {
     await updateDraft(_activeDraft!.copyWith(status: status));
   }
 
+  Future<void> publishActive() async {
+    if (_activeDraft == null || _activeDraft!.readiness < 80) return;
+    await updateDraft(_activeDraft!.copyWith(status: ProductStatus.published));
+  }
+
+  Future<void> deleteDraft(String id) async {
+    _products = _products.where((product) => product.id != id).toList();
+    if (_activeDraft?.id == id) {
+      _activeDraft = null;
+      await _storage.saveActiveDraft(null);
+    }
+    await _storage.saveProducts(_products);
+    notifyListeners();
+  }
+
   Future<void> setLanguage(String language) async {
     _language = language;
     await _storage.saveLanguage(language);
     notifyListeners();
   }
+
+  String translate(String key) =>
+      translations[languageCode]?[key] ?? translations['en']?[key] ?? key;
 
   Future<void> completeOnboarding() async {
     _onboardingComplete = true;

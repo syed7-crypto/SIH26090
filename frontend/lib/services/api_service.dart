@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
-import '../core/constants/api_constants.dart';
 import '../models/photo_analysis.dart';
 import '../models/voice_analysis.dart';
 
@@ -56,7 +55,6 @@ class ApiService {
       }
 
       final decoded = jsonDecode(body);
-      print('PHOTO API RESPONSE: $body');
       if (decoded is! Map<String, dynamic>) {
         throw const ApiException('The server returned an invalid response.');
       }
