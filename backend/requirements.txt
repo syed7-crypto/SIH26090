@@ -1,0 +1,16 @@
+# Core runtime dependencies
+google-genai>=2.22.0
+python-dotenv>=1.0.0
+
+# HTTP API and multipart upload handling
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9
+
+# Local image decoding and pixel analysis for Product Media Intelligence
+Pillow>=10.0.0
+
+# Optional local product-background segmentation
+rembg[cpu]>=2.0.0
+
+# Add a dependency only when implemented code genuinely needs it.
