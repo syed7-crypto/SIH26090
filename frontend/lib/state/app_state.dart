@@ -45,6 +45,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Select a persisted product by its Firestore document ID.
+  ///
+  /// The full Firestore product remains owned by FirestoreService; only the
+  /// selection is kept here for coordination between screens.
+  void selectActiveProduct(String productId) {
+    if (productId.trim().isEmpty) return;
+    _activeProductId = productId;
+    _activeProduct = null;
+    notifyListeners();
+  }
+
   void clearActiveProduct() {
     _activeProductId = null;
     _activeProduct = null;

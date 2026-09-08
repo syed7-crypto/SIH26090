@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_scope.dart';
 import 'add_product.dart';
 import '../services/firestore_service.dart';
 
@@ -96,6 +97,7 @@ class _ArtisanHomePageState extends State<ArtisanHomePage> {
                 height: 58,
                 child: FilledButton.icon(
                   onPressed: () {
+                    AppScope.maybeOf(context)?.clearActiveProduct();
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const AddProductPage(),
@@ -171,6 +173,12 @@ class _ProductCard extends StatelessWidget {
         ),
         title: Text(name == null || name.isEmpty ? 'Saved product' : name),
         subtitle: category == null || category.isEmpty ? null : Text(category),
+        onTap: () {
+          final productId = product['id'];
+          if (productId is String) {
+            AppScope.maybeOf(context)?.selectActiveProduct(productId);
+          }
+        },
       ),
     );
   }
