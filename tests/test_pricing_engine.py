@@ -16,10 +16,17 @@ class PricingEngineTests(unittest.TestCase):
         return calculate_pricing(self.input)["pricing"]
 
     def test_normal_pricing_uses_transparent_gross_margin_formula(self):
-        pricing = self.pricing()
+        result = calculate_pricing(self.input)
+        pricing = result["pricing"]
         self.assertEqual(pricing["costs"]["total"], 550.0)
         self.assertEqual(pricing["suggested_price"]["minimum"], 740.0)
         self.assertEqual(pricing["market_matching_basis"], "category + material + craft_type")
+        self.assertEqual(result["financial_breakdown"], {
+            "break_even_price": 550.0,
+            "artisan_take_home": 383.33,
+            "reinvestment_fund": 350.0,
+            "profit_margin_amount": 183.33,
+        })
 
     def test_market_summary_preserves_selected_sources_regression(self):
         self.input["market_references"].append({"category": "handmade bags", "material": "cotton", "craft_type": "handwoven", "price": 950, "source": "catalogue"})
@@ -36,13 +43,22 @@ class PricingEngineTests(unittest.TestCase):
 
     def test_missing_labour_rate_is_structured_not_guessed(self):
         del self.input["artisan_costs"]["labour_rate_per_hour"]
-        self.assertEqual(calculate_pricing(self.input), {"product_id": "ART-001", "status": "needs_input", "missing_inputs": ["labour_rate_per_hour"]})
+        result = calculate_pricing(self.input)
+        self.assertEqual(result["missing_inputs"], ["labour_rate_per_hour"])
+        self.assertIsNone(result["financial_breakdown"])
+        self.assertEqual(result["targeted_questions"], [{
+            "field": "labour_rate_per_hour",
+            "question": "What do you usually charge for one hour of your work?",
+            "guidance": "Think about your hourly wage. For skilled craftwork, artisans often charge between ₹80 and ₹200 per hour.",
+            "input_type": "currency_per_hour",
+        }])
 
     def test_missing_packaging_and_margin_are_not_zero_or_25_percent(self):
         del self.input["artisan_costs"]["packaging"]
         del self.input["artisan_costs"]["desired_margin_percent"]
         result = calculate_pricing(self.input)
         self.assertEqual(result["missing_inputs"], ["packaging", "desired_margin_percent"])
+        self.assertEqual([question["field"] for question in result["targeted_questions"]], result["missing_inputs"])
 
     def test_negative_cost_is_rejected(self):
         self.input["artisan_costs"]["other"] = -1

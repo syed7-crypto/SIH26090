@@ -39,9 +39,11 @@ result = calculate_pricing({
 })
 ```
 
-Cost input fields are required: `material`, `labour_hours`,
+To calculate a price, the required cost fields are `material`, `labour_hours`,
 `labour_rate_per_hour`, `packaging`, `other`, and `desired_margin_percent`.
-All must be finite non-negative numbers. The desired margin is a **gross
+When one is missing or null, the engine does not guess: it returns
+`{"status": "needs_input", "missing_inputs": [...]}`. Explicit zero is valid.
+All supplied values must be finite non-negative numbers. The desired margin is a **gross
 margin**, so the target floor is `total_cost / (1 - margin / 100)` and a margin
 of 100 or greater is invalid. The result states `margin_type: "gross_margin"`
 so that the current business meaning is visible to every integration. Changing
@@ -71,3 +73,33 @@ Run the module tests with:
 ```powershell
 python -m unittest tests.test_pricing_engine
 ```
+
+## Voice and API integration
+
+`map_voice_product_to_pricing_input` maps the existing Voice `ProductInfo`
+fields `category`, `material`, and `craft_type` into the pricing `product`
+object. Voice does not currently produce artisan costs, so these stay as a
+separate structured input and are never inferred from a transcript.
+
+The backend endpoint is:
+
+```text
+POST /api/v1/products/{product_id}/pricing/analyze
+```
+
+It accepts structured `currency`, `product`, `artisan_costs`, and optional
+`market_references`. Omitted market references load the deliberately empty
+approved dataset. A `needs_input` result returns HTTP 200 because it is an
+expected follow-up state; invalid supplied data returns HTTP 422.
+
+## Explainability and targeted guidance
+
+Every `priced` result adds a top-level `financial_breakdown` derived from the
+same existing Decimal calculation: `break_even_price` (rounded up to ₹10),
+`artisan_take_home`, `reinvestment_fund`, and `profit_margin_amount`. These
+are analytical outputs only; they do not alter the target price or range.
+
+A `needs_input` result keeps its stable `missing_inputs` field, adds ordered
+`targeted_questions` objects (`field`, `question`, `guidance`, `input_type`),
+and sets `financial_breakdown` to `null`. Guidance is for collection UX only:
+it never supplies a default cost, labour rate, or margin.

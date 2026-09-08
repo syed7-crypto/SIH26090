@@ -20,6 +20,41 @@ MONEY_PLACES = Decimal("0.01")
 PRICE_ROUNDING_INCREMENT = Decimal("10")
 SUPPORTED_CURRENCY = "INR"
 
+# These descriptions guide a future client in collecting an absent value. They
+# are never defaults and are not used by any pricing calculation.
+MISSING_INPUT_QUESTIONS = {
+    "material": {
+        "question": "How much raw material do you use for one product?",
+        "guidance": "Include the actual material cost for this one item.",
+        "input_type": "currency",
+    },
+    "labour_hours": {
+        "question": "How many hours does it take you to make one product?",
+        "guidance": "Include the time you personally spend making this item.",
+        "input_type": "hours",
+    },
+    "labour_rate_per_hour": {
+        "question": "What do you usually charge for one hour of your work?",
+        "guidance": "Think about your hourly wage. For skilled craftwork, artisans often charge between ₹80 and ₹200 per hour.",
+        "input_type": "currency_per_hour",
+    },
+    "packaging": {
+        "question": "How much do you spend on packaging for this product?",
+        "guidance": "Include boxes, wrapping, labels, or other packaging used for one item. Enter 0 only if it is genuinely zero.",
+        "input_type": "currency",
+    },
+    "other": {
+        "question": "Are there any other costs for making one product?",
+        "guidance": "Include genuinely applicable costs not already listed. Enter 0 only if there are none.",
+        "input_type": "currency",
+    },
+    "desired_margin_percent": {
+        "question": "What profit margin would you like to keep for business growth?",
+        "guidance": "Profit is separate from your hourly labor wage. A standard margin for handmade products is 15% to 35%.",
+        "input_type": "percentage",
+    },
+}
+
 
 def _money(value: Decimal | int | float | str) -> float:
     return float(Decimal(str(value)).quantize(MONEY_PLACES, rounding=ROUND_HALF_UP))
@@ -48,7 +83,13 @@ class PricingEngine:
         self._validate_request(product_id, product, artisan_costs, market_references, currency)
         missing_inputs = [field for field in self.REQUIRED_COST_FIELDS if field not in artisan_costs or artisan_costs[field] is None]
         if missing_inputs:
-            return {"product_id": product_id, "status": "needs_input", "missing_inputs": missing_inputs}
+            return {
+                "product_id": product_id,
+                "status": "needs_input",
+                "missing_inputs": missing_inputs,
+                "targeted_questions": self._targeted_questions(missing_inputs),
+                "financial_breakdown": None,
+            }
 
         values = {field: self._non_negative(artisan_costs, field) for field in self.COST_FIELDS}
         desired_margin = self._non_negative(artisan_costs, "desired_margin_percent")
@@ -68,6 +109,10 @@ class PricingEngine:
         return {
             "product_id": product_id,
             "status": "priced",
+            "financial_breakdown": self._financial_breakdown(
+                total_cost, labour_cost, values["material"], values["packaging"],
+                values["other"], target_price,
+            ),
             "pricing": {
                 "costs": {"material": _money(values["material"]), "labour": _money(labour_cost), "packaging": _money(values["packaging"]), "other": _money(values["other"]), "total": _money(total_cost)},
                 "labour": {"hours": _money(values["labour_hours"]), "rate_per_hour": _money(values["labour_rate_per_hour"])},
@@ -106,6 +151,32 @@ class PricingEngine:
         if not number.is_finite() or number < 0:
             raise ValueError(f"artisan_costs.{field} must be a finite non-negative number")
         return number
+
+    @staticmethod
+    def _targeted_questions(missing_inputs: Iterable[str]) -> list[dict[str, str]]:
+        """Return deterministic client guidance in the stable missing-field order."""
+        return [
+            {"field": field, **MISSING_INPUT_QUESTIONS[field]}
+            for field in missing_inputs
+        ]
+
+    @staticmethod
+    def _financial_breakdown(
+        total_cost: Decimal,
+        labour_cost: Decimal,
+        material: Decimal,
+        packaging: Decimal,
+        other: Decimal,
+        target_price: Decimal,
+    ) -> dict[str, float]:
+        """Derive presentation values without changing the pricing calculation."""
+        profit_margin_amount = target_price - total_cost
+        return {
+            "break_even_price": _money(PricingEngine._round_customer_price(total_cost)),
+            "artisan_take_home": _money(labour_cost + profit_margin_amount),
+            "reinvestment_fund": _money(material + packaging + other),
+            "profit_margin_amount": _money(profit_margin_amount),
+        }
 
     def _comparable_prices(self, product: Mapping[str, Any], records: Iterable[Mapping[str, Any]]) -> tuple[list[Decimal], list[str], str]:
         category, material, craft_type = (_normalise(product.get(name)) for name in ("category", "material", "craft_type"))

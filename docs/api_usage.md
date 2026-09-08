@@ -7,8 +7,12 @@ planned but not implemented in this foundation.
 GEMINI_VISION_KEY  → Product Media Intelligence / image understanding
 GEMINI_SPEECH_KEY  → Voice & Language Intelligence
 GEMINI_CATALOG_KEY → Catalogue generation
-GEMINI_PRICING_KEY → AI-assisted pricing reasoning/explanation
 ```
+
+Pricing Intelligence is deliberately outside this provider boundary. It is a
+deterministic calculation service and does not access `GEMINI_PRICING_KEY`, a
+model setting, or any external API. Existing pricing-named configuration
+placeholders are not used by the Pricing Engine or its HTTP route.
 
 The intended boundary is:
 
