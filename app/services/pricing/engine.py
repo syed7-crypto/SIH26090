@@ -239,9 +239,13 @@ class PricingEngine:
         # artisan's requested margin.  If comparable prices support a higher
         # position, their median informs the upper end of the range.
         minimum = PricingEngine._round_customer_price(target)
-        market_median = market["median"]
-        anchor = max(target, Decimal(str(market_median))) if market_median is not None else target
-        maximum = PricingEngine._round_customer_price(anchor * Decimal("1.10"))
+        market_median = Decimal(str(market["median"])) if market["median"] is not None else None
+        anchor = (
+            max(minimum, PricingEngine._round_customer_price(market_median))
+            if market_median is not None
+            else minimum
+        )
+        maximum = max(minimum, PricingEngine._round_customer_price(anchor * Decimal("1.10")))
         return minimum, maximum
 
     @staticmethod

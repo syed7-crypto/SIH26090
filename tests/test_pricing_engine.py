@@ -1,4 +1,5 @@
 import unittest
+from decimal import Decimal
 
 from app.services.pricing import calculate_pricing, load_market_references
 
@@ -42,7 +43,7 @@ class PricingEngineTests(unittest.TestCase):
         pricing = self.pricing()
         self.assertEqual(pricing["market_reference"], {"sample_size": 0, "minimum": None, "maximum": None, "median": None, "sources": []})
         self.assertEqual(pricing["market_viability"]["status"], "no_market_data")
-        self.assertEqual(pricing["suggested_price"], {"minimum": 740.0, "maximum": 810.0})
+        self.assertEqual(pricing["suggested_price"], {"minimum": 740.0, "maximum": 820.0})
         self.assertTrue(any("cost-and-margin based only" in message for message in pricing["explanation"]))
 
     def test_missing_labour_rate_is_structured_not_guessed(self):
@@ -122,6 +123,18 @@ class PricingEngineTests(unittest.TestCase):
     def test_suggested_price_never_falls_below_margin_floor(self):
         self.input["market_references"][0]["price"] = 100
         self.assertGreaterEqual(self.pricing()["suggested_price"]["minimum"], 733.34)
+
+    def test_suggested_range_uses_rounded_customer_floors_for_both_bounds(self):
+        minimum, maximum = self.pricing_engine_range(Decimal("733.33"), None)
+        self.assertEqual((minimum, maximum), (Decimal("740"), Decimal("820")))
+        minimum, maximum = self.pricing_engine_range(Decimal("733.33"), 743)
+        self.assertEqual((minimum, maximum), (Decimal("740"), Decimal("830")))
+        self.assertGreaterEqual(maximum, minimum)
+
+    @staticmethod
+    def pricing_engine_range(target, market_median):
+        from app.services.pricing import PricingEngine
+        return PricingEngine._suggested_range(target, {"median": market_median})
 
     def test_default_dataset_is_deliberately_empty(self):
         self.assertEqual(load_market_references(), [])
