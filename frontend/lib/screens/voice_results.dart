@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/voice_analysis.dart';
 import '../services/firestore_service.dart';
+import 'pricing.dart';
 
 class VoiceResultsPage extends StatelessWidget {
   const VoiceResultsPage({
@@ -121,6 +122,25 @@ class VoiceResultsPage extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => PricingPage(
+                          productId: result.productId,
+                          product: result.product,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.price_check_outlined),
+                  label: const Text('Get Price Recommendation'),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 56,
