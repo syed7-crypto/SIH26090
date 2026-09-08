@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-
+from app.api.pricing import router as pricing_router
 from app.api.routes.photos import router as photos_router
 from app.api.routes.voice import router as voice_router
 
@@ -22,3 +22,4 @@ if os.getenv("APP_ENV", "development").lower() == "development":
 
 app.include_router(photos_router)
 app.include_router(voice_router)
+app.include_router(pricing_router)
