@@ -65,6 +65,10 @@ class PricingApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["status"], "priced")
         self.assertEqual(body["pricing"]["market_viability"]["status"], "no_market_data")
         self.assertEqual(set(body["pricing"]["confidence"]), {"level", "reason"})
+        self.assertEqual(body["pricing"]["financial_terms"]["cost_recovery"], 700.0)
+        self.assertEqual(body["financial_breakdown"]["break_even_price"], 700.0)
+        self.assertEqual(body["pricing"]["financial_terms"]["non_labour_costs"], 300.0)
+        self.assertNotIn("reinvestment_amount", body["pricing"]["financial_terms"])
 
     async def test_market_loader_failure_falls_back_to_no_market_data(self):
         with patch("app.api.pricing.load_market_references", side_effect=ValueError("bad dataset")):

@@ -6,7 +6,7 @@ import logging
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from app.services.pricing import calculate_pricing, load_market_references
 from app.services.pricing.input_mapper import map_voice_product_to_pricing_input
@@ -36,11 +36,70 @@ class FinancialBreakdownResponse(BaseModel):
     profit_margin_amount: float
 
 
-class PricedDetailsResponse(BaseModel):
-    """Validated pricing-owned fields needed by direct API consumers."""
+class FinancialTermsResponse(BaseModel):
+    cost_recovery: float
+    labour_earnings: float
+    profit_amount: float
+    non_labour_costs: float
 
-    model_config = ConfigDict(extra="allow")
+
+class MarketReferenceResponse(BaseModel):
+    sample_size: int
+    minimum: float | None
+    maximum: float | None
+    median: float | None
+    sources: list[str]
+
+
+class MarketViabilityResponse(BaseModel):
+    status: Literal["no_market_data", "above_market_range", "below_market_range", "within_market_range"]
+    message: str
+
+
+class MarketTrendResponse(BaseModel):
+    direction: Literal["rising", "falling", "stable", "insufficient_data"]
+    change_percent: float | None
+    sample_size: int
+    pricing_adjustment_percent: float
+    message: str
+
+
+class ProductPositioningResponse(BaseModel):
+    available: bool
+    adjustment_percent: float
+    reason: str
+
+
+class PhotoEvidenceResponse(BaseModel):
+    available: bool
+    score: float | None
+    band: Literal["weak", "moderate", "strong"] | None = None
+    message: str
+
+
+class SuggestedPriceResponse(BaseModel):
+    minimum: float
+    maximum: float
+
+
+class PricedDetailsResponse(BaseModel):
+    """Explicit pricing-owned response fields for direct API consumers."""
+
+    costs: dict[str, float]
+    labour: dict[str, float]
+    desired_margin_percent: float
+    margin_type: Literal["gross_margin"]
+    currency: Literal["INR"]
+    market_reference: MarketReferenceResponse
+    market_matching_basis: str
+    market_viability: MarketViabilityResponse
+    market_trend: MarketTrendResponse
+    product_positioning: ProductPositioningResponse
+    photo_evidence: PhotoEvidenceResponse
+    financial_terms: FinancialTermsResponse
+    suggested_price: SuggestedPriceResponse
     confidence: ConfidenceResponse
+    explanation: list[str]
 
 
 class PricedPricingResponse(BaseModel):

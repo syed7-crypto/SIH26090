@@ -60,9 +60,14 @@ If there are no records, those three statistics are `null`, which the shared
 schema explicitly permits because they are genuinely unknown.
 
 The suggested lower price is the target price needed to preserve the requested
-margin. The upper price is 10% above the higher of that target and the matched
-market median. With no comparable records, it is 10% above the target. This
-makes the trade-off explicit instead of producing an unexplained single price.
+margin. The upper price starts at 10% above the higher of that target and the
+matched market median. Optional craft positioning can add at most 10% to this
+upper-range anchor. A historical rising/falling trend can add or subtract at
+most 3% more, calculated as the observed change divided by five and bounded to
+±3%. Stable or insufficient trends add 0%. These signals never lower the cost
+floor, and trend cannot dominate market evidence. With no comparable records,
+the range remains cost-and-margin based. This makes the trade-off explicit
+instead of producing an unexplained single price.
 For the INR MVP, both suggested endpoints are rounded **up** to the next ₹10;
 this preserves the requested margin while producing customer-facing prices.
 `pricing.market_viability` makes the result explicit when the desired-margin
@@ -76,10 +81,14 @@ python -m unittest tests.test_pricing_engine
 
 ## Voice and API integration
 
-`map_voice_product_to_pricing_input` maps the existing Voice `ProductInfo`
-fields `category`, `material`, and `craft_type` into the pricing `product`
-object. Voice does not currently produce artisan costs, so these stay as a
-separate structured input and are never inferred from a transcript.
+`map_voice_product_to_pricing_input` maps the fields currently present in the
+Voice `ProductInfo`: name, category, subcategory, material, color, craft type,
+description, dimensions, weight, usage, pattern, special features, and
+production time. It also safely accepts optional pricing-side fields such as
+craft complexity, craftsmanship level, and photo evidence when supplied by a
+future structured integration. Voice does not currently produce artisan costs,
+craft complexity, craftsmanship level, or photo scores, so these stay separate
+optional inputs and are never inferred from a transcript.
 
 The backend endpoint is:
 
@@ -103,3 +112,45 @@ A `needs_input` result keeps its stable `missing_inputs` field, adds ordered
 `targeted_questions` objects (`field`, `question`, `guidance`, `input_type`),
 and sets `financial_breakdown` to `null`. Guidance is for collection UX only:
 it never supplies a default cost, labour rate, or margin.
+
+## Extended product evidence
+
+The Voice mapper copies available structured fields such as name, category,
+subcategory, material, color, craft type, description, dimensions, weight,
+usage, pattern, special features, and production time. Optional fields such as
+`craft_complexity`, `craftsmanship_level`, and photo evidence are copied only
+when present. Missing values stay missing; no costs or attributes are inferred
+from free-form text.
+
+`product.craft_complexity` (0-100) and `product.craftsmanship_level` (`low`,
+`medium`, or `high`) are optional positioning signals. Their combined,
+deterministic adjustment is capped at 10% and affects only the upper suggested
+range anchor. It never lowers the sustainable cost/margin floor.
+
+Photo quality is evidence, not a price multiplier. `photo_quality_score`,
+`photo_readiness_score`, or `photo_readiness.score` is grouped as weak (0-39),
+moderate (40-69), or strong (70-100). It can improve the confidence
+explanation, but never increases price or reduces cost recovery.
+
+## Market matching and trends
+
+Reference records may optionally include `subcategory`, `region`, `period` or
+`date`, and `demand_trend`. Matching uses the most specific compatible basis:
+category + material + craft type, category + material, category + craft type,
+category + subcategory, then category only. Known contradictory attributes and
+incompatible categories are excluded.
+
+`pricing.market_trend` compares early and late median prices only when at least
+four dated records across two periods exist. Movement below 5% is `stable`;
+otherwise the result is `rising` or `falling`. Insufficient evidence returns
+`insufficient_data`. Date-only, naive datetime, UTC, and mixed ISO values are
+normalized deterministically; invalid or missing dates are ignored. This is
+historical reference analysis only; the module does not scrape marketplaces or
+claim live demand data.
+
+For terminology migration, legacy `financial_breakdown` keys remain unchanged.
+The additive `pricing.financial_terms` object provides `cost_recovery`,
+`labour_earnings`, `profit_amount`, and `non_labour_costs`. The old
+`reinvestment_fund` name is retained only as a legacy response field; it does
+not assert that the artisan reinvests that amount. No reinvestment allocation
+is inferred without an explicit future input.

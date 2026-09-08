@@ -45,10 +45,17 @@ def validate_market_reference(record: Mapping[str, Any]) -> None:
     for field in ("category", "source"):
         if not isinstance(record.get(field), str) or not record[field].strip():
             raise ValueError(f"market reference {field} must be a non-empty string")
-    for field in ("material", "craft_type"):
+    for field in ("subcategory", "material", "craft_type", "region", "period", "date", "demand_trend"):
         if record.get(field) is not None and (
             not isinstance(record[field], str) or not record[field].strip()
         ):
             raise ValueError(f"market reference {field} must be a non-empty string or null")
     if "price" not in record:
         raise ValueError("each market reference requires price")
+    try:
+        from decimal import Decimal
+        price = Decimal(str(record["price"]))
+    except Exception as error:
+        raise ValueError("market reference price must be a number") from error
+    if not price.is_finite() or price < 0:
+        raise ValueError("market reference price must be finite and non-negative")

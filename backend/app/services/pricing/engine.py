@@ -12,6 +12,8 @@ from statistics import median
 from typing import Any, Iterable, Mapping
 
 from .market_references import validate_market_reference
+from .positioning import craft_positioning
+from .trend_analyzer import analyze_market_trend
 
 
 MONEY_PLACES = Decimal("0.01")
@@ -102,9 +104,12 @@ class PricingEngine:
         total_cost = values["material"] + labour_cost + values["packaging"] + values["other"]
         target_price = total_cost / (Decimal("1") - (desired_margin / Decimal("100")))
 
-        comparable_prices, sources, matching_basis = self._comparable_prices(product, market_references)
+        comparable_prices, sources, matching_basis, comparable_records = self._comparable_prices(product, market_references)
         market = self._market_summary(comparable_prices, sources)
-        suggested_minimum, suggested_maximum = self._suggested_range(target_price, market)
+        market_trend = analyze_market_trend(comparable_records)
+        positioning = craft_positioning(product)
+        photo_evidence = self._photo_evidence(product)
+        suggested_minimum, suggested_maximum = self._suggested_range(target_price, market, positioning, market_trend)
         market_viability = self._market_viability(target_price, market)
 
         return {
@@ -132,14 +137,21 @@ class PricingEngine:
                 "market_reference": market,
                 "market_matching_basis": matching_basis,
                 "market_viability": market_viability,
+                "market_trend": market_trend,
+                "product_positioning": positioning,
+                "photo_evidence": photo_evidence,
+                "financial_terms": self._financial_terms(
+                    total_cost, labour_cost, values["material"], values["packaging"],
+                    values["other"], target_price,
+                ),
                 "suggested_price": {
                     "minimum": _money(suggested_minimum),
                     "maximum": _money(suggested_maximum),
                 },
-                "confidence": self._confidence(len(comparable_prices), matching_basis),
+                "confidence": self._confidence(len(comparable_prices), matching_basis, product, photo_evidence),
                 "explanation": self._explanation(
                     total_cost, labour_cost, desired_margin, target_price, market, matching_basis,
-                    suggested_minimum, suggested_maximum,
+                    suggested_minimum, suggested_maximum, positioning, market_trend,
                 ),
             },
         }
@@ -170,14 +182,33 @@ class PricingEngine:
             "profit_margin_amount": _money(profit_margin_amount),
         }
 
+    @staticmethod
+    def _financial_terms(
+        total_cost: Decimal,
+        labour_cost: Decimal,
+        material: Decimal,
+        packaging: Decimal,
+        other: Decimal,
+        target_price: Decimal,
+    ) -> dict[str, float]:
+        """Clear terminology kept separate from legacy response fields."""
+
+        return {
+            "cost_recovery": _money(total_cost),
+            "labour_earnings": _money(labour_cost),
+            "profit_amount": _money(target_price - total_cost),
+            "non_labour_costs": _money(material + packaging + other),
+        }
+
     def _comparable_prices(
         self, product: Mapping[str, Any], records: Iterable[Mapping[str, Any]]
-    ) -> tuple[list[Decimal], list[str], str]:
+    ) -> tuple[list[Decimal], list[str], str, list[Mapping[str, Any]]]:
         category = _normalise(product.get("category"))
         material = _normalise(product.get("material"))
         craft_type = _normalise(product.get("craft_type"))
+        subcategory = _normalise(product.get("subcategory"))
         if not category:
-            return [], [], "none (product category is unavailable)"
+            return [], [], "none (product category is unavailable)", []
 
         compatible: list[Mapping[str, Any]] = []
         for record in records:
@@ -197,12 +228,15 @@ class PricingEngine:
             stages.append(("category + material", ((material, "material"),)))
         if craft_type:
             stages.append(("category + craft_type", ((craft_type, "craft_type"),)))
+        if subcategory:
+            stages.append(("category + subcategory", ((subcategory, "subcategory"),)))
         stages.append(("category only", ()))
         for basis, attributes in stages:
             selected = [record for record in compatible if all(_normalise(record.get(field)) == value for value, field in attributes)]
             if selected:
-                return self._prices_and_sources(selected, basis)
-        return [], [], "none (no attribute-compatible category records)"
+                prices, sources, selected_basis = self._prices_and_sources(selected, basis)
+                return prices, sources, selected_basis, selected
+        return [], [], "none (no attribute-compatible category records)", []
 
     @staticmethod
     def _prices_and_sources(records: Iterable[Mapping[str, Any]], basis: str) -> tuple[list[Decimal], list[str], str]:
@@ -234,7 +268,12 @@ class PricingEngine:
         }
 
     @staticmethod
-    def _suggested_range(target: Decimal, market: Mapping[str, Any]) -> tuple[Decimal, Decimal]:
+    def _suggested_range(
+        target: Decimal,
+        market: Mapping[str, Any],
+        positioning: Mapping[str, Any] | None = None,
+        trend: Mapping[str, Any] | None = None,
+    ) -> tuple[Decimal, Decimal]:
         # The lower bound is never below the price needed to achieve the
         # artisan's requested margin.  If comparable prices support a higher
         # position, their median informs the upper end of the range.
@@ -245,7 +284,12 @@ class PricingEngine:
             if market_median is not None
             else minimum
         )
-        maximum = max(minimum, PricingEngine._round_customer_price(anchor * Decimal("1.10")))
+        adjustment = Decimal(str((positioning or {}).get("adjustment_percent", 0))) / Decimal("100")
+        trend_adjustment = Decimal(str((trend or {}).get("pricing_adjustment_percent", 0))) / Decimal("100")
+        maximum = max(
+            minimum,
+            PricingEngine._round_customer_price(anchor * (Decimal("1.10") + adjustment + trend_adjustment)),
+        )
         return minimum, maximum
 
     @staticmethod
@@ -285,7 +329,12 @@ class PricingEngine:
         }
 
     @staticmethod
-    def _confidence(sample_size: int, matching_basis: str) -> dict[str, str]:
+    def _confidence(
+        sample_size: int,
+        matching_basis: str,
+        product: Mapping[str, Any] | None = None,
+        photo_evidence: Mapping[str, Any] | None = None,
+    ) -> dict[str, str]:
         """Return explainable evidence strength, not an ML probability."""
         if sample_size == 0:
             score = Decimal("0.35")
@@ -305,13 +354,51 @@ class PricingEngine:
             score = Decimal("0.85")
             reason = f"{sample_size} compatible comparables matched by {matching_basis}, including product attributes beyond category."
 
+        product_values = product or {}
+        attribute_count = sum(
+            1 for field in ("category", "subcategory", "material", "craft_type", "color", "pattern", "usage")
+            if product_values.get(field)
+        )
+        if attribute_count >= 5 and sample_size >= 3:
+            score = min(Decimal("0.95"), score + Decimal("0.05"))
+        if photo_evidence and photo_evidence.get("available") and photo_evidence.get("score", 0) >= 70:
+            score = min(Decimal("0.95"), score + Decimal("0.05"))
+        extras = []
+        if attribute_count >= 5:
+            extras.append(f"{attribute_count} structured product attribute(s)")
+        if photo_evidence and photo_evidence.get("available"):
+            extras.append(f"visual evidence score {photo_evidence['score']:.0f}/100")
+        if extras:
+            reason += " Evidence includes " + " and ".join(extras) + "."
         level = "high" if score >= Decimal("0.75") else "medium" if score >= Decimal("0.45") else "low"
         return {"level": level, "reason": reason}
+
+    @staticmethod
+    def _photo_evidence(product: Mapping[str, Any]) -> dict[str, Any]:
+        value = product.get("photo_quality_score", product.get("photo_readiness_score"))
+        if value is None and isinstance(product.get("photo_readiness"), Mapping):
+            value = product["photo_readiness"].get("score")
+        if value is None:
+            return {"available": False, "score": None, "message": "No photo-quality evidence was provided."}
+        try:
+            score = Decimal(str(value))
+        except Exception as error:
+            raise ValueError("product.photo_quality_score must be a number") from error
+        if not score.is_finite() or not 0 <= score <= 100:
+            raise ValueError("product.photo_quality_score must be between 0 and 100")
+        band = "weak" if score < 40 else "moderate" if score < 70 else "strong"
+        return {
+            "available": True,
+            "score": float(score),
+            "band": band,
+            "message": f"Photo evidence is {band}; it affects confidence only, not the cost floor.",
+        }
 
     @staticmethod
     def _explanation(
         total: Decimal, labour: Decimal, margin: Decimal, target: Decimal,
         market: Mapping[str, Any], basis: str, low: Decimal, high: Decimal,
+        positioning: Mapping[str, Any], trend: Mapping[str, Any],
     ) -> list[str]:
         messages = [
             f"Production cost is ₹{_money(total):.2f}, including ₹{_money(labour):.2f} for labour.",
@@ -325,6 +412,16 @@ class PricingEngine:
             )
         else:
             messages.append("No comparable market records were available, so the range is cost-and-margin based only.")
+        if positioning.get("available"):
+            messages.append(
+                f"A bounded {positioning['adjustment_percent']:.1f}% craft-positioning signal informed the upper range without changing the cost floor."
+            )
+        if trend.get("direction") != "insufficient_data":
+            messages.append(trend["message"])
+            if trend.get("pricing_adjustment_percent"):
+                messages.append(
+                    f"The trend contributed a bounded {trend['pricing_adjustment_percent']:.1f}% adjustment to the upper range only."
+                )
         messages.append(f"Suggested selling range: ₹{_money(low):.2f}–₹{_money(high):.2f}.")
         return messages
 

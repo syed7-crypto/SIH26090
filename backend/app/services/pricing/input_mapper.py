@@ -11,7 +11,13 @@ from dataclasses import asdict, is_dataclass
 from typing import Any, Mapping
 
 
-VOICE_PRODUCT_FIELDS = ("category", "material", "craft_type")
+VOICE_PRODUCT_FIELDS = (
+    "name", "category", "subcategory", "material", "color", "craft_type",
+    "description", "dimensions", "weight", "usage", "pattern",
+    "special_features", "production_time", "craft_complexity",
+    "craftsmanship_level", "photo_quality_score", "photo_readiness_score",
+    "photo_readiness",
+)
 
 
 def map_voice_product_to_pricing_input(
@@ -35,10 +41,20 @@ def map_voice_product_to_pricing_input(
     else:
         source = {field: getattr(voice_product, field, None) for field in VOICE_PRODUCT_FIELDS}
 
+    product = {}
+    for field in VOICE_PRODUCT_FIELDS:
+        value = source.get(field)
+        if is_dataclass(value) and not isinstance(value, type):
+            value = asdict(value)
+        if isinstance(value, dict) and all(item is None for item in value.values()):
+            value = None
+        if value is not None and value != {} and value != []:
+            product[field] = value
+
     return {
         "product_id": product_id,
         "currency": currency,
-        "product": {field: source.get(field) for field in VOICE_PRODUCT_FIELDS},
+        "product": product,
         "artisan_costs": dict(artisan_costs) if artisan_costs is not None else {},
         "market_references": list(market_references) if market_references is not None else [],
     }
