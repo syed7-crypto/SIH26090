@@ -11,8 +11,9 @@ import '../screens/voice_results.dart';
 import '../services/api_service.dart';
 
 class VoiceProductPage extends StatefulWidget {
-  const VoiceProductPage({super.key, this.apiService});
+  const VoiceProductPage({super.key, required this.productId, this.apiService});
 
+  final String productId;
   final ApiService? apiService;
 
   @override
@@ -20,7 +21,6 @@ class VoiceProductPage extends StatefulWidget {
 }
 
 class _VoiceProductPageState extends State<VoiceProductPage> {
-  static const _productId = 'ART-001';
   static const _recordConfig = RecordConfig(encoder: AudioEncoder.wav);
   final AudioRecorder _recorder = AudioRecorder();
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -92,7 +92,7 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
     setState(() => _isProcessing = true);
     try {
       final result = await _apiService.analyzeVoice(
-        productId: _productId,
+        productId: widget.productId,
         audio: audio,
       );
       if (!mounted) return;

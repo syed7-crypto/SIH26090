@@ -20,6 +20,14 @@ class FirestoreService {
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
+  /// Returns a new product document ID without writing an empty document.
+  String createProductId(String artisanId) => _db
+      .collection('artisans')
+      .doc(artisanId)
+      .collection('products')
+      .doc()
+      .id;
+
   /// Save or update an artisan profile.
   Future<void> saveArtisan({
     required String artisanId,

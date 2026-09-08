@@ -97,10 +97,13 @@ class _ArtisanHomePageState extends State<ArtisanHomePage> {
                 height: 58,
                 child: FilledButton.icon(
                   onPressed: () {
-                    AppScope.maybeOf(context)?.clearActiveProduct();
+                    final productId = _firestoreService.createProductId(
+                      FirestoreService.defaultArtisanId,
+                    );
+                    AppScope.maybeOf(context)?.selectActiveProduct(productId);
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const AddProductPage(),
+                        builder: (_) => AddProductPage(productId: productId),
                       ),
                     );
                   },

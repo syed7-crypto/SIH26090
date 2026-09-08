@@ -7,8 +7,9 @@ import '../screens/photo_analysis_results.dart';
 import '../services/api_service.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key, this.apiService});
+  const AddProductPage({super.key, required this.productId, this.apiService});
 
+  final String productId;
   final ApiService? apiService;
 
   @override
@@ -17,7 +18,6 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   static const _maxPhotos = 5;
-  static const _productId = 'ART-001';
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _photos = [];
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -59,7 +59,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
     try {
       final result = await _apiService.analyzePhotos(
-        productId: _productId,
+        productId: widget.productId,
         photos: List<XFile>.unmodifiable(_photos),
       );
       if (!mounted) return;
@@ -68,6 +68,7 @@ class _AddProductPageState extends State<AddProductPage> {
           builder: (_) => PhotoAnalysisResultsPage(
             result: result,
             localPhotos: List<XFile>.unmodifiable(_photos),
+            productId: widget.productId,
           ),
         ),
       );

@@ -33,7 +33,9 @@ void main() {
   testWidgets('continue is disabled before two photos are selected', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(MaterialApp(home: const AddProductPage()));
+    await tester.pumpWidget(
+      const MaterialApp(home: AddProductPage(productId: 'TEST-PRODUCT')),
+    );
 
     final continueButton = tester.widget<FilledButton>(
       find.ancestor(

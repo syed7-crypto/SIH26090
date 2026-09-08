@@ -142,7 +142,11 @@ void main() {
   testWidgets('voice screen starts with recording controls', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: VoiceProductPage()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: VoiceProductPage(productId: 'TEST-PRODUCT'),
+      ),
+    );
 
     expect(find.text('Tell us about your product'), findsOneWidget);
     expect(find.text('Start recording'), findsOneWidget);
@@ -156,7 +160,11 @@ void main() {
     final result = PhotoAnalysisResultForTest.result;
     await tester.pumpWidget(
       MaterialApp(
-        home: PhotoAnalysisResultsPage(result: result, localPhotos: const []),
+        home: PhotoAnalysisResultsPage(
+          result: result,
+          localPhotos: const [],
+          productId: 'TEST-PRODUCT',
+        ),
       ),
     );
 

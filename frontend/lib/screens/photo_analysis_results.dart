@@ -11,10 +11,12 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
     super.key,
     required this.result,
     required this.localPhotos,
+    required this.productId,
   });
 
   final PhotoAnalysisResult result;
   final List<XFile> localPhotos;
+  final String productId;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +80,7 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const VoiceProductPage(),
+                        builder: (_) => VoiceProductPage(productId: productId),
                       ),
                     );
                   },
