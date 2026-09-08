@@ -2,11 +2,19 @@ import os
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.photos import router as photos_router
 from app.api.routes.voice import router as voice_router
 
 app = FastAPI(title="SIH26090 Artisan Commerce API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if os.getenv("APP_ENV", "development").lower() == "development":
     app.add_middleware(
