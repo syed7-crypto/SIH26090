@@ -454,8 +454,7 @@
               "type": "string",
               "enum": [
                 "low",
-                "limited",
-                "moderate",
+                "medium",
                 "high"
               ]
             },

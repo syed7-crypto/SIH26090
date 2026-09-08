@@ -21,6 +21,10 @@ class PricingEngineTests(unittest.TestCase):
         self.assertEqual(pricing["costs"]["total"], 550.0)
         self.assertEqual(pricing["suggested_price"]["minimum"], 740.0)
         self.assertEqual(pricing["market_matching_basis"], "category + material + craft_type")
+        self.assertEqual(pricing["confidence"], {
+            "level": "medium",
+            "reason": "One comparable matched by category + material + craft_type; more compatible records would strengthen the recommendation.",
+        })
         self.assertEqual(result["financial_breakdown"], {
             "break_even_price": 550.0,
             "artisan_take_home": 383.33,
@@ -87,7 +91,10 @@ class PricingEngineTests(unittest.TestCase):
     def test_category_only_match_when_appropriate(self):
         self.input["product"] = {"category": "handmade bags"}
         self.input["market_references"] = [{"category": "handmade bags", "material": None, "craft_type": None, "price": 900, "source": "survey"}]
-        self.assertEqual(self.pricing()["market_matching_basis"], "category only")
+        pricing = self.pricing()
+        self.assertEqual(pricing["market_matching_basis"], "category only")
+        self.assertEqual(pricing["confidence"]["level"], "low")
+        self.assertIn("capped at low confidence", pricing["confidence"]["reason"])
 
     def test_explicitly_incompatible_attributes_never_become_comparables(self):
         self.input["market_references"] = [{"category": "handmade bags", "material": "leather", "craft_type": "hand stitched", "price": 1400, "source": "survey"}]

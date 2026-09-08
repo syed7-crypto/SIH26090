@@ -21,6 +21,7 @@ from app.services.speech import (
     ProductInfo,
     ProductDimensions,
     ProductWeight,
+    AudioProcessor,
 )
 
 
@@ -109,6 +110,14 @@ class TestProductInfoExtraction(unittest.TestCase):
         self.assertEqual(product.material, "silk")
         self.assertIn("traditional", product.special_features)
 
+    def test_extracts_category_from_explicit_product_keyword(self):
+        product = ProductInfoExtractor.extract_all("I make a handmade cotton tote bag")
+        self.assertEqual(product.category, "handmade bags")
+
+    def test_leaves_category_null_when_no_category_keyword_is_present(self):
+        product = ProductInfoExtractor.extract_all("This is made from cotton and silk")
+        self.assertIsNone(product.category)
+
     def test_extract_dimensions(self):
         """Extract dimension information."""
         transcript = "The scarf is 180 cm long and 60 cm wide"
@@ -167,7 +176,7 @@ class TestProductInfoExtraction(unittest.TestCase):
         missing = ProductInfoExtractor.get_missing_fields(product)
 
         # Should identify many missing fields
-        self.assertIn("category", missing)
+        self.assertNotIn("category", missing)
         self.assertIn("subcategory", missing)
         self.assertIn("color", missing)
         self.assertIn("weight", missing)
@@ -327,6 +336,10 @@ class TestVoiceProcessor(unittest.TestCase):
         # Should detect Kannada
         self.assertEqual(result.voice.language_code, "kn")
         self.assertIsNotNone(result.voice.original_transcript)
+
+    def test_rejects_audio_path_traversal(self):
+        with self.assertRaisesRegex(ValueError, "path traversal"):
+            AudioProcessor.validate_audio_path("../outside.wav", "data/uploads")
 
 
 class TestVoiceProcessingResultSchema(unittest.TestCase):

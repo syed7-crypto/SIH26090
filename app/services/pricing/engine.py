@@ -281,14 +281,28 @@ class PricingEngine:
         }
 
     @staticmethod
-    def _confidence(sample_size: int, matching_basis: str) -> float:
+    def _confidence(sample_size: int, matching_basis: str) -> dict[str, str]:
+        """Return explainable evidence strength, not an ML probability."""
         if sample_size == 0:
-            return 0.35
-        if sample_size == 1:
-            return 0.55
-        if sample_size < 5:
-            return 0.7
-        return 0.85 if matching_basis != "category" else 0.75
+            score = Decimal("0.35")
+            reason = "Complete cost inputs were provided, but no comparable market records were available."
+        elif matching_basis == "category only":
+            # A category-only record is useful context but cannot establish a
+            # strong comparison when material and craft details are absent.
+            score = min(Decimal("0.40"), Decimal("0.30") + Decimal("0.02") * sample_size)
+            reason = f"{sample_size} compatible category-only comparable record(s) were used; category-only evidence is capped at low confidence."
+        elif sample_size == 1:
+            score = Decimal("0.55")
+            reason = f"One comparable matched by {matching_basis}; more compatible records would strengthen the recommendation."
+        elif sample_size < 5:
+            score = Decimal("0.70")
+            reason = f"{sample_size} compatible comparables matched by {matching_basis}."
+        else:
+            score = Decimal("0.85")
+            reason = f"{sample_size} compatible comparables matched by {matching_basis}, including product attributes beyond category."
+
+        level = "high" if score >= Decimal("0.75") else "medium" if score >= Decimal("0.45") else "low"
+        return {"level": level, "reason": reason}
 
     @staticmethod
     def _explanation(

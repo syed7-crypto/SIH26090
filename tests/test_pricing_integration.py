@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from app.services.pricing import (
     calculate_pricing,
@@ -41,12 +42,14 @@ class PricingMapperTests(unittest.TestCase):
         self.assertEqual(result["missing_inputs"], ["labour_rate_per_hour", "packaging", "other", "desired_margin_percent"])
 
 
-class PricingApiTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from fastapi.testclient import TestClient
+class PricingApiTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        from httpx import ASGITransport, AsyncClient
         from app.main import app
-        cls.client = TestClient(app)
+        self.client = AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver")
+
+    async def asyncTearDown(self):
+        await self.client.aclose()
 
     def payload(self):
         return {
@@ -55,33 +58,41 @@ class PricingApiTests(unittest.TestCase):
             "artisan_costs": {"material": 300, "labour_hours": 4, "labour_rate_per_hour": 100, "packaging": 0, "other": 0, "desired_margin_percent": 25},
         }
 
-    def test_complete_input_returns_priced_result_with_no_market_data(self):
-        response = self.client.post("/api/v1/products/ART-API-1/pricing/analyze", json=self.payload())
+    async def test_complete_input_returns_priced_result_with_no_market_data(self):
+        response = await self.client.post("/api/v1/products/ART-API-1/pricing/analyze", json=self.payload())
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["status"], "priced")
         self.assertEqual(body["pricing"]["market_viability"]["status"], "no_market_data")
+        self.assertEqual(set(body["pricing"]["confidence"]), {"level", "reason"})
 
-    def test_missing_input_is_successful_targeted_response(self):
+    async def test_market_loader_failure_falls_back_to_no_market_data(self):
+        with patch("app.api.pricing.load_market_references", side_effect=ValueError("bad dataset")):
+            response = await self.client.post("/api/v1/products/ART-API-LOADER/pricing/analyze", json=self.payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "priced")
+        self.assertEqual(response.json()["pricing"]["market_viability"]["status"], "no_market_data")
+
+    async def test_missing_input_is_successful_targeted_response(self):
         payload = self.payload()
         del payload["artisan_costs"]["labour_rate_per_hour"]
-        response = self.client.post("/api/v1/products/ART-API-2/pricing/analyze", json=payload)
+        response = await self.client.post("/api/v1/products/ART-API-2/pricing/analyze", json=payload)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["missing_inputs"], ["labour_rate_per_hour"])
         self.assertEqual(response.json()["targeted_questions"][0]["field"], "labour_rate_per_hour")
         self.assertIsNone(response.json()["financial_breakdown"])
 
-    def test_validation_error_is_422(self):
+    async def test_validation_error_is_422(self):
         payload = self.payload()
         payload["artisan_costs"]["material"] = -1
-        response = self.client.post("/api/v1/products/ART-API-3/pricing/analyze", json=payload)
+        response = await self.client.post("/api/v1/products/ART-API-3/pricing/analyze", json=payload)
         self.assertEqual(response.status_code, 422)
         self.assertIn("finite non-negative", response.json()["detail"])
 
-    def test_supplied_market_records_preserve_sources(self):
+    async def test_supplied_market_records_preserve_sources(self):
         payload = self.payload()
         payload["market_references"] = [{"category": "handmade bags", "material": "cotton", "craft_type": "handwoven", "price": 1200, "source": "approved survey"}]
-        response = self.client.post("/api/v1/products/ART-API-4/pricing/analyze", json=payload)
+        response = await self.client.post("/api/v1/products/ART-API-4/pricing/analyze", json=payload)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["pricing"]["market_reference"]["sources"], ["approved survey"])
 

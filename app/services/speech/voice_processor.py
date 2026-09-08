@@ -207,6 +207,16 @@ class Translator:
 class ProductInfoExtractor:
     """Extracts structured product information from transcript text."""
 
+    # These are category labels, not cost or market-data assumptions. They are
+    # assigned only when the transcript contains an unambiguous product term.
+    CATEGORY_KEYWORDS = {
+        "handmade bags": ("handbag", "tote bag", "tote", "bag", "bags"),
+        "scarves": ("scarf", "scarves", "shawl", "shawls"),
+        "jewellery": ("jewellery", "jewelry", "necklace", "earring", "earrings", "bracelet", "ring"),
+        "home decor": ("cushion", "cushions", "wall hanging", "wall-hanging", "vase", "decor"),
+        "clothing": ("dress", "dresses", "kurta", "saree", "sari", "shirt", "shirts"),
+    }
+
     # Field extraction patterns and keywords
     EXTRACTION_PATTERNS = {
         "name": r"(?:(?:my|this|the)?\s*(?:product|item|craft|piece)[\s:]*)?([a-zA-Z0-9\s\-\.]+?)(?:\s*(?:is|are|made of|has|with)|$)",
@@ -332,6 +342,13 @@ class ProductInfoExtractor:
                 product.material = keyword
                 break
 
+        # Extract a market-comparison category only when the artisan's words
+        # contain a recognised product term. Unknown categories remain null.
+        for category, keywords in ProductInfoExtractor.CATEGORY_KEYWORDS.items():
+            if any(keyword in text_lower for keyword in keywords):
+                product.category = category
+                break
+
         # Extract color
         color_keywords = [
             "red",
@@ -418,9 +435,20 @@ class AudioProcessor:
     SUPPORTED_FORMATS = [".wav", ".mp3", ".flac", ".ogg"]
 
     @staticmethod
+    def _resolve_storage_path(storage_path: str, storage_root: str) -> Path:
+        """Resolve a storage reference and reject paths outside the upload root."""
+        root = Path(storage_root).resolve()
+        candidate = (root / storage_path).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError as error:
+            raise ValueError("Invalid storage path: path traversal attempt detected.") from error
+        return candidate
+
+    @staticmethod
     def validate_audio_path(storage_path: str, storage_root: str) -> bool:
         """Validate that audio file exists and is supported format."""
-        full_path = Path(storage_root) / storage_path
+        full_path = AudioProcessor._resolve_storage_path(storage_path, storage_root)
 
         if not full_path.exists():
             logger.error(f"Audio file not found: {full_path}")
@@ -435,7 +463,7 @@ class AudioProcessor:
     @staticmethod
     def get_audio_size(storage_path: str, storage_root: str) -> int:
         """Get audio file size in bytes."""
-        full_path = Path(storage_root) / storage_path
+        full_path = AudioProcessor._resolve_storage_path(storage_path, storage_root)
         try:
             return full_path.stat().st_size
         except OSError:
