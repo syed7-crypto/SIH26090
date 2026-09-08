@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/photo_analysis.dart';
+import 'voice_product.dart';
 
 class PhotoAnalysisResultsPage extends StatelessWidget {
   const PhotoAnalysisResultsPage({
@@ -34,18 +35,17 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               _ReadinessCard(result: result),
-              const SizedBox(height: 16),
-              _TypeCard(
-                title: 'Photo types found',
-                values: result.media.availableTypes,
-                emptyText: 'No photo types found',
-              ),
-              const SizedBox(height: 12),
-              _TypeCard(
-                title: 'Photo types still needed',
-                values: result.media.missingTypes,
-                emptyText: 'No missing photo types',
-              ),
+              if (result.media.photoReadiness.enhanced > 0) ...[
+                const SizedBox(height: 20),
+                Text(
+                  'AI improved your photos',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text('Lighting, contrast, or sharpness was improved safely.'),
+              ],
               if (result.media.recommendedPrimaryPath != null) ...[
                 const SizedBox(height: 16),
                 _PrimaryMetadataCard(
@@ -54,7 +54,7 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
               ],
               const SizedBox(height: 24),
               Text(
-                'Analyzed photos',
+                'Your product photos',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -70,6 +70,22 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
                         : null,
                   ),
                 ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const VoiceProductPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.mic_none_outlined),
+                  label: const Text('Tell us about your product'),
+                ),
+              ),
             ],
           ),
         ),
@@ -85,6 +101,7 @@ class _ReadinessCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final readiness = result.media.photoReadiness;
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -95,7 +112,7 @@ class _ReadinessCard extends StatelessWidget {
               width: 72,
               height: 72,
               child: CircularProgressIndicator(
-                value: result.media.mediaReadinessScore / 100,
+                value: readiness.score / 100,
                 strokeWidth: 8,
                 backgroundColor: theme.colorScheme.primaryContainer,
               ),
@@ -106,14 +123,14 @@ class _ReadinessCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Media readiness',
+                    'E-commerce readiness',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${result.media.mediaReadinessScore.toStringAsFixed(1)} / 100',
+                    '${readiness.score.toStringAsFixed(0)} / 100',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -123,7 +140,28 @@ class _ReadinessCard extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 14),
+        _ReadinessCounts(readiness: readiness),
       ),
+    );
+  }
+}
+
+class _ReadinessCounts extends StatelessWidget {
+  const _ReadinessCounts({required this.readiness});
+  final PhotoReadiness readiness;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      children: [
+        Text('${readiness.accepted} photos ready'),
+        if (readiness.enhanced > 0) Text('${readiness.enhanced} improved'),
+        if (readiness.removed > 0) Text('${readiness.removed} removed'),
+        if (readiness.needsRetake > 0) Text('${readiness.needsRetake} to retake'),
+      ],
     );
   }
 }

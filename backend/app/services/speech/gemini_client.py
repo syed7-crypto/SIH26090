@@ -9,6 +9,10 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+class GeminiExtractionError(RuntimeError):
+    """Raised when Gemini cannot return usable product attributes."""
+
+
 class GeminiClient:
     """Wrapper for Gemini API operations."""
 
@@ -22,8 +26,8 @@ class GeminiClient:
             extraction_model: Model for attribute extraction (defaults to GEMINI_CATALOG_MODEL env var)
         """
         self.api_key = api_key or os.getenv("GEMINI_SPEECH_KEY") or os.getenv("GEMINI_CATALOG_KEY")
-        self.speech_model = speech_model or os.getenv("GEMINI_SPEECH_MODEL", "gemini-2.0-flash")
-        self.extraction_model = extraction_model or os.getenv("GEMINI_CATALOG_MODEL", "gemini-2.0-flash")
+        self.speech_model = speech_model or os.getenv("GEMINI_SPEECH_MODEL", "gemini-3.5-transcribe")
+        self.extraction_model = extraction_model or os.getenv("GEMINI_CATALOG_MODEL", "gemini-3.5-flash-lite")
         
         if not self.api_key:
             logger.warning("No Gemini API key configured. Set GEMINI_SPEECH_KEY or GEMINI_CATALOG_KEY.")
@@ -112,19 +116,15 @@ If you cannot understand the speech, return only: [INAUDIBLE]"""
         """
         if not self.client:
             logger.error("Gemini client not initialized. Cannot extract attributes.")
-            return {}, {}
+            raise GeminiExtractionError("Gemini extraction is not configured")
 
         try:
             from google.genai import types
             import json
             
-            prompt = """You are an expert at extracting product information from artisan descriptions.
-            
-From the artisan's description below, extract the following product attributes in JSON format.
-IMPORTANT: Only extract information explicitly mentioned. Do NOT invent or assume missing details.
-For missing fields, use null values.
-
-Return ONLY a valid JSON object (no markdown, no extra text) with this structure:
+            prompt = """Extract product attributes from the artisan description below.
+Only use information explicitly mentioned. Do not invent missing details; use null.
+Return only JSON matching this structure:
 {
     "name": "product name or null",
     "category": "product category or null",
@@ -150,11 +150,14 @@ Artisan description:
                 model=self.extraction_model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    http_options=types.HttpOptions(timeout=45000)
+                    response_mime_type="application/json",
+                    http_options=types.HttpOptions(timeout=60000),
                 ),
             )
             
             response_text = response.text.strip() if response.text else "{}"
+            if response_text.startswith("```"):
+                response_text = response_text.strip("`").removeprefix("json").strip()
             
             # Parse JSON response
             extracted = json.loads(response_text)
@@ -185,11 +188,11 @@ Artisan description:
             return extracted, confidence_scores
             
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Gemini extraction response as JSON: {e}")
-            return {}, {}
+            logger.exception("Failed to parse Gemini extraction response as JSON")
+            raise GeminiExtractionError("Gemini returned invalid product attributes") from e
         except Exception as e:
-            logger.error(f"Error during attribute extraction: {e}")
-            return {}, {}
+            logger.exception("Error during attribute extraction")
+            raise GeminiExtractionError("Gemini product attribute extraction failed") from e
 
     def normalize_to_english(self, text: str, source_language: str) -> tuple[Optional[str], float]:
         """Normalize text to English if needed.

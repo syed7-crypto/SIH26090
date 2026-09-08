@@ -24,6 +24,7 @@ class PhotoMediaAnalysis {
     required this.missingTypes,
     required this.mediaReadinessScore,
     required this.recommendedPrimaryPath,
+    required this.photoReadiness,
   });
 
   factory PhotoMediaAnalysis.fromJson(Map<String, dynamic> json) {
@@ -34,14 +35,19 @@ class PhotoMediaAnalysis {
       throw const FormatException('The media analysis response is invalid.');
     }
 
+    final parsedImages = imagesJson
+        .map((item) => PhotoImageAnalysis.fromJson(item))
+        .toList();
+    final readinessJson = json['photo_readiness'];
     return PhotoMediaAnalysis(
-      images: imagesJson
-          .map((item) => PhotoImageAnalysis.fromJson(item))
-          .toList(),
+      images: parsedImages,
       availableTypes: availableJson.cast<String>(),
       missingTypes: missingJson.cast<String>(),
       mediaReadinessScore: _number(json['media_readiness_score']),
       recommendedPrimaryPath: json['recommended_primary_path'] as String?,
+      photoReadiness: readinessJson is Map<String, dynamic>
+          ? PhotoReadiness.fromJson(readinessJson)
+          : PhotoReadiness.fromLegacy(parsedImages),
     );
   }
 
@@ -50,6 +56,54 @@ class PhotoMediaAnalysis {
   final List<String> missingTypes;
   final double mediaReadinessScore;
   final String? recommendedPrimaryPath;
+  final PhotoReadiness photoReadiness;
+}
+
+class PhotoReadiness {
+  const PhotoReadiness({
+    required this.score,
+    required this.totalUploaded,
+    required this.accepted,
+    required this.enhanced,
+    required this.removed,
+    required this.needsRetake,
+    required this.issues,
+  });
+
+  factory PhotoReadiness.fromJson(Map<String, dynamic> json) {
+    return PhotoReadiness(
+      score: _number(json['score']),
+      totalUploaded: _integer(json['total_uploaded']),
+      accepted: _integer(json['accepted']),
+      enhanced: _integer(json['enhanced']),
+      removed: _integer(json['removed']),
+      needsRetake: _integer(json['needs_retake']),
+      issues: _stringList(json['issues']),
+    );
+  }
+
+  factory PhotoReadiness.fromLegacy(List<PhotoImageAnalysis> images) {
+    final accepted = images.where((image) => image.status != 'removed' && image.status != 'needs_retake').length;
+    return PhotoReadiness(
+      score: images.isEmpty
+          ? 0
+          : images.map((image) => image.qualityScore).reduce((a, b) => a + b) / images.length,
+      totalUploaded: images.length,
+      accepted: accepted,
+      enhanced: 0,
+      removed: images.where((image) => image.status == 'removed').length,
+      needsRetake: images.where((image) => image.status == 'needs_retake').length,
+      issues: const [],
+    );
+  }
+
+  final double score;
+  final int totalUploaded;
+  final int accepted;
+  final int enhanced;
+  final int removed;
+  final int needsRetake;
+  final List<String> issues;
 }
 
 class PhotoImageAnalysis {
@@ -78,6 +132,14 @@ class PhotoImageAnalysis {
       photoType: value['photo_type'] as String,
       isDuplicate: value['is_duplicate'] as bool,
       isRecommendedPrimary: value['is_recommended_primary'] as bool,
+      originalPath: value['original_path'] as String? ?? value['storage_path'] as String,
+      finalPath: value['final_path'] as String?,
+      status: value['status'] as String? ?? 'kept',
+      qualityScoreBefore: _number(value['quality_score_before'] ?? value['quality_score']),
+      qualityScoreAfter: _number(value['quality_score_after'] ?? value['quality_score']),
+      actions: _stringList(value['actions']),
+      issuesBefore: _stringList(value['issues_before']),
+      reason: value['reason'] as String? ?? 'Photo analyzed',
     );
   }
 
@@ -89,9 +151,31 @@ class PhotoImageAnalysis {
   final String photoType;
   final bool isDuplicate;
   final bool isRecommendedPrimary;
+  final String originalPath;
+  final String? finalPath;
+  final String status;
+  final double qualityScoreBefore;
+  final double qualityScoreAfter;
+  final List<String> actions;
+  final List<String> issuesBefore;
+  final String reason;
 }
 
 double _number(dynamic value) {
   if (value is num) return value.toDouble();
   throw const FormatException('A numeric analysis value is invalid.');
+}
+
+int _integer(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  throw const FormatException('An integer analysis value is invalid.');
+}
+
+List<String> _stringList(dynamic value) {
+  if (value == null) return const [];
+  if (value is List && value.every((item) => item is String)) {
+    return value.cast<String>();
+  }
+  throw const FormatException('A text list in the analysis is invalid.');
 }

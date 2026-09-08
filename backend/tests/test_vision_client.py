@@ -10,7 +10,7 @@ from app.services.vision import MediaProcessor, ShotSignals, VisionClient
 class FakeVisionClient:
     def analyze_image(self, image_bytes: bytes, mime_type: str) -> ShotSignals:
         self.called_with = (image_bytes, mime_type)
-        return ShotSignals(has_person_or_context=True)
+        return ShotSignals(has_person=True, is_being_worn_or_used=True)
 
 
 class TestVisionClient(unittest.TestCase):

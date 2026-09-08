@@ -106,6 +106,30 @@ class TestPhotoAnalysisApi(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             vision_client.assert_called_once()
 
+    def test_development_cors_allows_flutter_origin_only(self) -> None:
+        response = self.client.options(
+            "/api/v1/products/ART-001/photos/analyze",
+            headers={
+                "Origin": "http://localhost:54874",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"),
+            "http://localhost:54874",
+        )
+
+        rejected = self.client.options(
+            "/api/v1/products/ART-001/photos/analyze",
+            headers={
+                "Origin": "http://example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertNotIn("access-control-allow-origin", rejected.headers)
+
 
 if __name__ == "__main__":
     unittest.main()

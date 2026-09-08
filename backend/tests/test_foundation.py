@@ -12,6 +12,7 @@ class FoundationTest(unittest.TestCase):
             {
                 "APP_ENV": "test",
                 "GEMINI_VISION_MODEL": "configured-model",
+                "GEMINI_SPEECH_KEY": "",
             },
             clear=False,
         ):

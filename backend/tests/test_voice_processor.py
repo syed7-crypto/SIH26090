@@ -192,6 +192,11 @@ class TestVoiceProcessor(unittest.TestCase):
     def setUp(self):
         """Set up test processor with mock storage root."""
         self.processor = VoiceProcessor(storage_root="data/uploads")
+        self.processor.gemini = MagicMock()
+        self.processor.gemini.extract_product_attributes.return_value = ({}, {})
+        self.processor.gemini.normalize_to_english.side_effect = (
+            lambda text, language: (text, 0.5)
+        )
 
     def test_process_with_transcript(self):
         """Process voice input with provided transcript."""

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from app.services.speech.gemini_client import GeminiClient
+from app.services.speech.gemini_client import GeminiClient, GeminiExtractionError
 
 
 class TestGeminiClientTranscription(unittest.TestCase):
@@ -64,6 +64,14 @@ class TestGeminiClientTranscription(unittest.TestCase):
         self.assertIsNone(transcript)
         self.assertEqual(confidence, 0.0)
 
+    def test_outbound_network_failure_returns_no_fake_transcript(self) -> None:
+        self.client.client.files.upload.side_effect = OSError(10013, "socket access denied")
+
+        transcript, confidence = self.client.transcribe_audio(b"browser wav bytes")
+
+        self.assertIsNone(transcript)
+        self.assertEqual(confidence, 0.0)
+
     def test_unavailable_client_returns_no_transcript(self) -> None:
         self.client.client = None
 
@@ -92,23 +100,28 @@ class TestGeminiClientExtraction(unittest.TestCase):
         call_kwargs = self.client.client.models.generate_content.call_args.kwargs
         prompt = call_kwargs["contents"]
         self.assertIn("A blue silk scarf", prompt)
-        self.assertEqual(call_kwargs["config"].http_options.timeout, 45000)
+        self.assertEqual(call_kwargs["config"].http_options.timeout, 60000)
 
-    def test_extraction_failure_returns_empty_values(self) -> None:
+    def test_extraction_failure_is_reported(self) -> None:
         self.client.client.models.generate_content.side_effect = RuntimeError("API failure")
 
-        extracted, confidence = self.client.extract_product_attributes("A silk scarf")
+        with self.assertRaises(GeminiExtractionError):
+            self.client.extract_product_attributes("A silk scarf")
 
-        self.assertEqual(extracted, {})
-        self.assertEqual(confidence, {})
-
-    def test_unavailable_client_returns_empty_values(self) -> None:
+    def test_unavailable_client_is_reported(self) -> None:
         self.client.client = None
 
-        extracted, confidence = self.client.extract_product_attributes("A silk scarf")
+        with self.assertRaises(GeminiExtractionError):
+            self.client.extract_product_attributes("A silk scarf")
 
-        self.assertEqual(extracted, {})
-        self.assertEqual(confidence, {})
+    def test_fenced_json_is_parsed(self) -> None:
+        response = MagicMock()
+        response.text = '```json\n{"name": "Silk scarf", "material": "silk"}\n```'
+        self.client.client.models.generate_content.return_value = response
+
+        extracted, _ = self.client.extract_product_attributes("A silk scarf")
+
+        self.assertEqual(extracted["name"], "Silk scarf")
 
 
 if __name__ == "__main__":

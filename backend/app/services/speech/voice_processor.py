@@ -104,8 +104,12 @@ class VoiceProcessor:
                     audio_bytes = AudioProcessor.read_audio_bytes(storage_path, self.storage_root)
                     original_transcript, speech_confidence = self.gemini.transcribe_audio(audio_bytes)
                     logger.info(f"Transcription confidence: {speech_confidence:.2f}")
+                    if not original_transcript:
+                        raise RuntimeError("Gemini speech transcription returned no transcript")
             except Exception as e:
                 logger.error(f"Failed to transcribe audio: {e}")
+                if audio_valid:
+                    raise RuntimeError("Gemini speech transcription failed") from e
                 original_transcript = None
                 speech_confidence = 0.0
 

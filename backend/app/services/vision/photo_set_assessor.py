@@ -28,7 +28,13 @@ def assess_photo_set(
     duplicate_paths = duplicate_paths or set()
     available = tuple(kind for kind in RECOMMENDED_TYPES if any(item.photo_type == kind for item in classifications))
     missing = tuple(kind for kind in RECOMMENDED_TYPES if kind not in available)
-    usable = [item for item in classifications if item.storage_path not in duplicate_paths and item.storage_path in qualities]
+    usable = [
+        item
+        for item in classifications
+        if item.photo_type == "primary"
+        and item.storage_path not in duplicate_paths
+        and item.storage_path in qualities
+    ]
     recommended = max(usable, key=lambda item: qualities[item.storage_path].quality_score, default=None)
 
     coverage_score = 100.0 * len(available) / len(RECOMMENDED_TYPES)

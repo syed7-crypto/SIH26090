@@ -40,6 +40,10 @@ def validate_media_output(output: dict[str, Any]) -> None:
             raise ValueError("duplicate and primary flags must be boolean")
         if image["photo_type"] not in PHOTO_TYPES:
             raise ValueError(f"unsupported photo_type: {image['photo_type']}")
+        if "status" in image and image["status"] not in {"kept", "enhanced", "removed", "needs_retake"}:
+            raise ValueError("unsupported photo processing status")
+        if "actions" in image and not isinstance(image["actions"], list):
+            raise ValueError("photo actions must be an array")
 
     for field in ("available_types", "missing_types"):
         values = media.get(field)
@@ -51,3 +55,6 @@ def validate_media_output(output: dict[str, Any]) -> None:
     primary_path = media.get("recommended_primary_path")
     if primary_path is not None and not isinstance(primary_path, str):
         raise ValueError("recommended_primary_path must be a string or null")
+    readiness = media.get("photo_readiness")
+    if readiness is not None and not isinstance(readiness, dict):
+        raise ValueError("photo_readiness must be an object")

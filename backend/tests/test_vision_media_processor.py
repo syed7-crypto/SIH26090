@@ -26,7 +26,7 @@ class TestMediaProcessor(unittest.TestCase):
                     {"image_id": "img-1", "storage_path": primary},
                     {"image_id": "img-2", "storage_path": detail},
                 ],
-                {detail: ShotSignals(close_crop=True)},
+                {primary: ShotSignals(shows_complete_product=True), detail: ShotSignals(close_crop=True)},
             )
 
             self.assertEqual(result["product_id"], "ART-001")
@@ -65,6 +65,7 @@ class TestMediaProcessor(unittest.TestCase):
             ).process(
                 "ART-005",
                 [{"image_id": "img-5", "storage_path": source}],
+                {source: ShotSignals(shows_complete_product=True)},
                 create_primary=True,
             )
 

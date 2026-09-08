@@ -7,6 +7,16 @@ secret manager or environment file outside version control.
 
 from dataclasses import dataclass
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+# Local development starts FastAPI from ``backend/`` while the repository
+# keeps one shared, ignored ``.env`` at its root. Existing process variables
+# win so deployment environments and CI are not overridden.
+_ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(_ROOT_ENV_FILE, override=False)
 
 
 def _env(name: str, default: str = "") -> str:
