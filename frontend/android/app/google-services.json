@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "506432512731",
+    "project_id": "sih26090-artisan-commerce",
+    "storage_bucket": "sih26090-artisan-commerce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506432512731:android:429740259d354fb38a22fe",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDP-9THybuuu__1gtu1skdZuMYb-dhxevA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
