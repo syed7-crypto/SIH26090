@@ -5,6 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../models/product_draft.dart';
 import '../widgets/common/local_product_image.dart';
 import '../widgets/common/karigar_design.dart';
+import '../widgets/common/mobile_viewport.dart';
 
 class ListingPage extends StatelessWidget {
   const ListingPage({super.key});
@@ -25,8 +26,10 @@ class ListingPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Your Listing is Ready!')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+        child: MobileViewport(
+          child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(16),
           children: [
             const FlowStepper(currentStep: 5),
             const SizedBox(height: 20),
@@ -59,7 +62,7 @@ class ListingPage extends StatelessWidget {
                       path: draft.photoPaths.isEmpty
                           ? null
                           : draft.photoPaths.first,
-                      height: 180,
+                      height: 145,
                       width: double.infinity,
                       borderRadius: 14,
                     ),
@@ -140,6 +143,7 @@ class ListingPage extends StatelessWidget {
               label: const Text('Share listing'),
             ),
           ],
+          ),
         ),
       ),
     );

@@ -24,7 +24,7 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 390),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -307,8 +307,8 @@ class _LocalPhotoPreview extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: Image.memory(
               snapshot.data!,
-              width: 170,
-              height: 160,
+              width: 150,
+              height: 145,
               fit: BoxFit.cover,
             ),
           ),

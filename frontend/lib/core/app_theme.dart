@@ -35,13 +35,21 @@ abstract final class AppTheme {
         side: const BorderSide(color: border),
       ),
     ),
+    textTheme: const TextTheme(
+      headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: charcoal),
+      titleLarge: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: charcoal),
+      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: charcoal),
+      bodyLarge: TextStyle(fontSize: 15, height: 1.4, color: charcoal),
+      bodyMedium: TextStyle(fontSize: 13, height: 1.35, color: secondaryText),
+      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: terracotta,
         foregroundColor: Colors.white,
-        minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

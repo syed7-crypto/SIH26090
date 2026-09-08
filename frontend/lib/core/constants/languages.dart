@@ -34,6 +34,18 @@ const translations = <String, Map<String, String>>{
     'published': 'Published',
     'save': 'Save product',
     'settings': 'Settings',
+    'welcome_tagline': 'Tradition Meets Technology',
+    'welcome_message':
+        'Turn your handmade products into market-ready digital listings using your voice and photos.',
+    'get_started': 'Get Started',
+    'existing_account': 'I Already Have an Account',
+    'hello_artisan': 'Hello, Artisan',
+    'home_support': 'Let us share your craft with the world.',
+    'create_new_product': 'Create New Product',
+    'create_support': 'Turn your product into a market-ready listing',
+    'total_products': 'Total Products',
+    'recent_products': 'Recent Products',
+    'view_all': 'View All >',
   },
   'hi': {
     'app_name': 'कारीगरAI',

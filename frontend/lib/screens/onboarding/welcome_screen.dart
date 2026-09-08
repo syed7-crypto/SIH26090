@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../../app_scope.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/common/mobile_viewport.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, required this.onContinue});
   final VoidCallback onContinue;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.ivory,
-    body: SafeArea(
-      child: SingleChildScrollView(
+  Widget build(BuildContext context) {
+    final state = AppScope.maybeOf(context);
+    String tr(String key, String fallback) => state?.translate(key) ?? fallback;
+    return Scaffold(
+      backgroundColor: AppColors.ivory,
+      body: FloatingBubbles(
+        child: SafeArea(
+          child: MobileViewport(
+            child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             const Text(
               'KarigarAI',
               style: TextStyle(
@@ -26,13 +33,13 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Tradition Meets Technology',
-              style: TextStyle(fontSize: 16, color: AppColors.secondaryText),
+            Text(
+              tr('welcome_tagline', 'Tradition Meets Technology'),
+              style: const TextStyle(fontSize: 14, color: AppColors.secondaryText),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             Container(
-              height: 260,
+              height: 190,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.white,
@@ -51,7 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.storefront_rounded,
-                    size: 80,
+                    size: 58,
                     color: AppColors.sageGreen,
                   ),
                   SizedBox(height: 16),
@@ -66,17 +73,17 @@ class WelcomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            const Text(
-              'Turn your handmade products into market-ready digital listings using your voice and photos.',
+            const SizedBox(height: 20),
+            Text(
+              tr('welcome_message', 'Turn your handmade products into market-ready digital listings using your voice and photos.'),
               textAlign: TextAlign.center,
               softWrap: true,
               style: TextStyle(color: AppColors.secondaryText, height: 1.4),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.mutedTerracotta,
@@ -86,8 +93,8 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: onContinue,
-                child: const Text(
-                  'Get Started',
+                child: Text(
+                  tr('get_started', 'Get Started'),
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -95,7 +102,7 @@ class WelcomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 48,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.sageGreen),
@@ -104,8 +111,8 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 onPressed: onContinue,
-                child: const Text(
-                  'I Already Have an Account',
+                child: Text(
+                  tr('existing_account', 'I Already Have an Account'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -117,6 +124,10 @@ class WelcomeScreen extends StatelessWidget {
           ],
         ),
       ),
-    ),
-  );
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
