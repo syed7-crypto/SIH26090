@@ -2,14 +2,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
+import 'app_scope.dart';
 import 'screens/home.dart';
+import 'state/app_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const ArtisanAiApp());
+  runApp(AppScope(state: AppState(), child: const ArtisanAiApp()));
 }
 
 class ArtisanAiApp extends StatelessWidget {

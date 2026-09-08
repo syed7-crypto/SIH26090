@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_scope.dart';
 import '../models/voice_analysis.dart';
 import '../services/firestore_service.dart';
 import 'pricing.dart';
@@ -127,6 +128,10 @@ class VoiceResultsPage extends StatelessWidget {
                 height: 56,
                 child: FilledButton.icon(
                   onPressed: () {
+                    AppScope.maybeOf(context)?.setActiveProduct(
+                      result.productId,
+                      result.product,
+                    );
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => PricingPage(
