@@ -22,12 +22,29 @@ const _responseJson = {
         'is_duplicate': false,
         'photo_type': 'primary',
         'is_recommended_primary': true,
+        'original_path': 'photo_analysis/a/img-1.jpg',
+        'final_path': 'photo_studio/img-1.png',
+        'status': 'enhanced',
+        'quality_score_before': 55,
+        'quality_score_after': 80,
+        'actions': ['brightness_corrected'],
+        'issues_before': ['poor_exposure'],
+        'reason': 'Improved lighting',
       },
     ],
     'available_types': ['primary'],
     'missing_types': ['detail', 'lifestyle'],
     'media_readiness_score': 62.5,
     'recommended_primary_path': 'photo_analysis/a/img-1.jpg',
+    'photo_readiness': {
+      'score': 82,
+      'total_uploaded': 1,
+      'accepted': 1,
+      'enhanced': 1,
+      'removed': 0,
+      'needs_retake': 0,
+      'issues': [],
+    },
   },
 };
 
@@ -60,6 +77,10 @@ void main() {
     expect(result.media.recommendedPrimaryPath, contains('img-1.jpg'));
     expect(result.media.images.single.qualityScore, 80);
     expect(result.media.images.single.photoType, 'primary');
+    expect(result.media.images.single.status, 'enhanced');
+    expect(result.media.images.single.actions, ['brightness_corrected']);
+    expect(result.media.photoReadiness.score, 82);
+    expect(result.media.photoReadiness.enhanced, 1);
   });
 
   test('uploads repeated photos and returns a typed success result', () async {

@@ -27,4 +27,7 @@ class ImageQuality:
     framing_score: float
     visibility_score: Optional[float] = None
     issues: tuple[str, ...] = ()
+    width: Optional[int] = None
+    height: Optional[int] = None
+    megapixels: Optional[float] = None
 

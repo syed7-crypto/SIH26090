@@ -116,6 +116,14 @@ class PhotoImageAnalysis {
     required this.photoType,
     required this.isDuplicate,
     required this.isRecommendedPrimary,
+    required this.originalPath,
+    required this.finalPath,
+    required this.status,
+    required this.qualityScoreBefore,
+    required this.qualityScoreAfter,
+    required this.actions,
+    required this.issuesBefore,
+    required this.reason,
   });
 
   factory PhotoImageAnalysis.fromJson(dynamic value) {

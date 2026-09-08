@@ -106,9 +106,11 @@ class _ReadinessCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Row(
+        child: Column(
           children: [
-            SizedBox(
+            Row(
+              children: [
+                SizedBox(
               width: 72,
               height: 72,
               child: CircularProgressIndicator(
@@ -117,8 +119,8 @@ class _ReadinessCard extends StatelessWidget {
                 backgroundColor: theme.colorScheme.primaryContainer,
               ),
             ),
-            const SizedBox(width: 20),
-            Expanded(
+                const SizedBox(width: 20),
+                Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -137,11 +139,13 @@ class _ReadinessCard extends StatelessWidget {
                   ),
                 ],
               ),
+                ),
+              ],
             ),
+            const SizedBox(height: 14),
+            _ReadinessCounts(readiness: readiness),
           ],
         ),
-        const SizedBox(height: 14),
-        _ReadinessCounts(readiness: readiness),
       ),
     );
   }
@@ -162,44 +166,6 @@ class _ReadinessCounts extends StatelessWidget {
         if (readiness.removed > 0) Text('${readiness.removed} removed'),
         if (readiness.needsRetake > 0) Text('${readiness.needsRetake} to retake'),
       ],
-    );
-  }
-}
-
-class _TypeCard extends StatelessWidget {
-  const _TypeCard({
-    required this.title,
-    required this.values,
-    required this.emptyText,
-  });
-  final String title;
-  final List<String> values;
-  final String emptyText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            values.isEmpty
-                ? Text(emptyText)
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final value in values) Chip(label: Text(value)),
-                    ],
-                  ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -228,13 +194,18 @@ class _AnalyzedPhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRemoved = analysis.status == 'removed' || analysis.status == 'needs_retake';
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (localPhoto != null) _LocalPhotoPreview(photo: localPhoto!),
+          if (localPhoto != null)
+            Opacity(
+              opacity: isRemoved ? 0.45 : 1,
+              child: _LocalPhotoPreview(photo: localPhoto!),
+            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -243,22 +214,26 @@ class _AnalyzedPhotoCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      analysis.photoType,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                    Expanded(
+                      child: Text(
+                        _statusLabel(analysis.status),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
                     ),
-                    if (analysis.isDuplicate)
-                      const Chip(label: Text('Duplicate')),
+                    Chip(label: Text(_statusLabel(analysis.status))),
                   ],
                 ),
                 const SizedBox(height: 12),
-                _MetricRow(label: 'Quality', value: analysis.qualityScore),
-                _MetricRow(label: 'Blur', value: analysis.blurScore),
-                _MetricRow(
-                  label: 'Brightness',
-                  value: analysis.brightnessScore,
-                ),
+                Text(analysis.reason),
+                if (analysis.isDuplicate) ...[
+                  const SizedBox(height: 6),
+                  const Text('This photo was removed because it is a duplicate.'),
+                ],
+                if (analysis.actions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('Improved: ${analysis.actions.map(_humanAction).join(', ')}'),
+                ],
               ],
             ),
           ),
@@ -268,20 +243,29 @@ class _AnalyzedPhotoCard extends StatelessWidget {
   }
 }
 
-class _MetricRow extends StatelessWidget {
-  const _MetricRow({required this.label, required this.value});
-  final String label;
-  final double value;
+String _statusLabel(String status) {
+  switch (status) {
+    case 'enhanced':
+      return '✓ Enhanced';
+    case 'removed':
+      return '✕ Removed';
+    case 'needs_retake':
+      return '⚠ Retake needed';
+    default:
+      return '✓ Ready';
+  }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(label), Text(value.toStringAsFixed(1))],
-      ),
-    );
+String _humanAction(String action) {
+  switch (action) {
+    case 'brightness_corrected':
+      return 'better lighting';
+    case 'contrast_improved':
+      return 'better contrast';
+    case 'sharpened':
+      return 'improved sharpness';
+    default:
+      return action.replaceAll('_', ' ');
   }
 }
 

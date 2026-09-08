@@ -79,27 +79,35 @@ class MediaProcessor:
             reason = decision.reason
             if status == "enhance":
                 candidate_path = f"photo_studio/{uuid4().hex}_enhanced.png"
-                photo_studio.enhance(
-                    storage_path,
-                    candidate_path,
-                    brightness_score=quality.brightness_score,
-                    contrast=before_contrast,
-                    blur_score=quality.blur_score,
-                )
-                candidate_pixels, candidate_width, candidate_height = ImageProcessor.load_grayscale_pixels(candidate_path, self.storage_root)
-                candidate_quality = analyze_pixels(candidate_pixels, candidate_width, candidate_height)
-                if candidate_quality.quality_score > quality.quality_score:
-                    final_path = candidate_path
-                    quality_after = candidate_quality
-                    status = "enhanced"
-                    enhanced_count += 1
-                    accepted_count += 1
-                    reason = "Improved lighting, contrast, or sharpness"
-                else:
+                try:
+                    photo_studio.enhance(
+                        storage_path,
+                        candidate_path,
+                        brightness_score=quality.brightness_score,
+                        contrast=before_contrast,
+                        blur_score=quality.blur_score,
+                    )
+                    candidate_pixels, candidate_width, candidate_height = ImageProcessor.load_grayscale_pixels(candidate_path, self.storage_root)
+                    candidate_quality = analyze_pixels(candidate_pixels, candidate_width, candidate_height)
+                    if candidate_quality.quality_score > quality.quality_score:
+                        final_path = candidate_path
+                        quality_after = candidate_quality
+                        status = "enhanced"
+                        enhanced_count += 1
+                        accepted_count += 1
+                        reason = "Improved lighting, contrast, or sharpness"
+                    else:
+                        ImageProcessor.resolve_path(candidate_path, self.storage_root).unlink(missing_ok=True)
+                        status = "kept"
+                        actions = []
+                        reason = "Enhancement was rejected because it did not improve the image"
+                        accepted_count += 1
+                except Exception:
+                    logger.exception("Photo enhancement failed; retaining original image_id=%s", metadata.image_id)
                     ImageProcessor.resolve_path(candidate_path, self.storage_root).unlink(missing_ok=True)
                     status = "kept"
                     actions = []
-                    reason = "Enhancement was rejected because it did not improve the image"
+                    reason = "Enhancement was unavailable; the original photo was kept"
                     accepted_count += 1
             elif status == "kept":
                 accepted_count += 1
@@ -112,7 +120,14 @@ class MediaProcessor:
                 readiness_issues.append(reason)
                 final_path = None
             signals = signals_by_path.get(storage_path)
-            if signals is None and self.vision_client is not None:
+            if status in {"removed", "needs_retake"}:
+                logger.info(
+                    "Skipping Vision for unusable image_id=%s storage_path=%s status=%s",
+                    metadata.image_id,
+                    storage_path,
+                    status,
+                )
+            elif signals is None and self.vision_client is not None:
                 mime_type = "image/jpeg" if metadata.format in {"jpg", "jpeg"} else f"image/{metadata.format}"
                 signals = self.vision_client.analyze_image(
                     ImageProcessor.read_image_bytes(storage_path, self.storage_root), mime_type

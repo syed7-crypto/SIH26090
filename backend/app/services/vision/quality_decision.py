@@ -19,7 +19,17 @@ def decide_photo(quality: ImageQuality, *, is_duplicate: bool, contrast_score: f
         return PhotoDecision("removed", "Duplicate of another photo")
     if quality.blur_score < 35:
         return PhotoDecision("removed", "Too blurry to recover")
-    if quality.resolution_score < 50:
+    # ``resolution_score`` is a useful quality contribution, but a moderate
+    # low-resolution warning is not by itself a retake decision. Use the
+    # actual dimensions when available and reserve retakes for genuinely tiny
+    # images that cannot provide useful product detail.
+    if quality.width is not None and quality.height is not None:
+        extremely_tiny = min(quality.width, quality.height) < 160 or (
+            quality.megapixels is not None and quality.megapixels < 0.1
+        )
+    else:
+        extremely_tiny = quality.resolution_score < 20
+    if extremely_tiny:
         return PhotoDecision("needs_retake", "Image resolution is too low")
     if quality.visibility_score is not None and quality.visibility_score < 35:
         return PhotoDecision("needs_retake", "Product is not clearly visible")

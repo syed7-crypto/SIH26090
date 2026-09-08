@@ -76,4 +76,7 @@ def analyze_pixels(pixels: list[list[float]], width: int, height: int) -> ImageQ
         framing_score=round(framing_score, 2),
         visibility_score=visibility_score,
         issues=tuple(issues),
+        width=width,
+        height=height,
+        megapixels=round(megapixels, 4),
     )

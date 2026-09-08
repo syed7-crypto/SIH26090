@@ -10,9 +10,14 @@ from app.services.vision import PrimaryImageProcessor
 
 class TestMediaProcessor(unittest.TestCase):
     def _write_image(self, root: str, name: str, offset: int) -> str:
-        image = Image.new("RGB", (200, 200), "white")
+        image = Image.new("RGB", (1000, 1000), (30, 30, 30) if offset else (128, 128, 128))
         draw = ImageDraw.Draw(image)
-        draw.rectangle((30 + offset, 30, 150 + offset, 150), fill="black")
+        draw.rectangle((150 + offset, 150, 850 + offset, 850), fill=(220, 220, 220) if offset else (70, 70, 70))
+        for position in range(180, 820, 40):
+            draw.line((position + offset, 180, position + offset, 820), fill=(210, 210, 210), width=3)
+        if offset:
+            draw.ellipse((300, 300, 700, 700), outline=(240, 240, 240), width=8)
+            draw.rectangle((0, 0, 260, 260), fill=(220, 40, 40))
         image.save(Path(root) / name)
         return name
 
