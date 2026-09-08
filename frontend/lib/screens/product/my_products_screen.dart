@@ -78,8 +78,8 @@ class MyProductsScreen extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 product.name.isEmpty
-                                    ? 'Untitled product'
-                                    : product.name,
+                                    ? 'UNTITLED PRODUCT'
+                                    : product.name.toUpperCase(),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),

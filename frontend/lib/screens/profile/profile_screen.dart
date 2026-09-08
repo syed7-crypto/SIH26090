@@ -34,14 +34,14 @@ class ProfileScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              artisan.name,
+                              artisan.name.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             Text(
-                              '${artisan.craftType}, ${artisan.region}',
+                              '${artisan.craftType.toUpperCase()}, ${artisan.region}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),

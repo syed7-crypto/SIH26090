@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../screens/app_shell.dart';
+import '../../screens/ai_processing_page.dart';
 import '../../screens/pricing_page.dart';
 import '../../screens/listing_page.dart';
 import '../../screens/settings_screen.dart';
@@ -34,6 +35,10 @@ abstract final class RouteGenerator {
         );
       case AppRoutes.pricing:
         return MaterialPageRoute<void>(builder: (_) => const PricingPage());
+      case AppRoutes.aiProcessing:
+        return MaterialPageRoute<void>(
+          builder: (_) => const AiProcessingPage(),
+        );
       case AppRoutes.listingReady:
       case AppRoutes.preview:
         return MaterialPageRoute<void>(builder: (_) => const ListingPage());

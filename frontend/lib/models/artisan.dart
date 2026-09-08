@@ -8,10 +8,10 @@ class Artisan {
 
   factory Artisan.fromJson(Map<String, dynamic> json) => Artisan(
     name: (json['name'] as String?)?.trim().isNotEmpty == true
-        ? json['name'] as String
+        ? (json['name'] as String).toUpperCase()
         : 'Artisan',
     craftType: (json['craftType'] as String?)?.trim().isNotEmpty == true
-        ? json['craftType'] as String
+        ? (json['craftType'] as String).toUpperCase()
         : 'Handicrafts',
     region: (json['region'] as String?)?.trim().isNotEmpty == true
         ? json['region'] as String
@@ -30,8 +30,8 @@ class Artisan {
     String? region,
     String? language,
   }) => Artisan(
-    name: name ?? this.name,
-    craftType: craftType ?? this.craftType,
+    name: (name ?? this.name).toUpperCase(),
+    craftType: (craftType ?? this.craftType).toUpperCase(),
     region: region ?? this.region,
     language: language ?? this.language,
   );

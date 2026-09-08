@@ -2,11 +2,11 @@ class ProductDraft {
   ProductDraft({
     required this.id,
     required this.createdAt,
-    this.name = '',
-    this.category = '',
+    String name = '',
+    String category = '',
     this.material = '',
     this.colour = '',
-    this.craftType = '',
+    String craftType = '',
     this.dimensions = '',
     this.description = '',
     this.language = 'English',
@@ -15,7 +15,10 @@ class ProductDraft {
     this.voiceTranscript = '',
     this.price,
     this.status = ProductStatus.draft,
-  }) : photoPaths = List.unmodifiable(photoPaths.take(2));
+  }) : name = name.toUpperCase(),
+       category = category.toUpperCase(),
+       craftType = craftType.toUpperCase(),
+       photoPaths = List.unmodifiable(photoPaths.take(10));
 
   factory ProductDraft.empty(String id, {String language = 'English'}) =>
       ProductDraft(id: id, createdAt: DateTime.now(), language: language);
@@ -87,7 +90,7 @@ class ProductDraft {
   );
 
   int get readiness {
-    double score = photoPaths.length == 2
+    double score = photoPaths.length >= 2
         ? 20
         : photoPaths.isNotEmpty
         ? 10

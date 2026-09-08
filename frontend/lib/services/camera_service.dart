@@ -6,5 +6,5 @@ class CameraService {
   Future<XFile?> capturePhoto() =>
       _picker.pickImage(source: ImageSource.camera);
   Future<List<XFile>> pickPhotos() async =>
-      (await _picker.pickMultiImage()).take(2).toList();
+      (await _picker.pickMultiImage()).take(10).toList();
 }

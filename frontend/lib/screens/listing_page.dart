@@ -65,7 +65,9 @@ class ListingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      draft.name.isEmpty ? 'Untitled product' : draft.name,
+                      draft.name.isEmpty
+                          ? 'UNTITLED PRODUCT'
+                          : draft.name.toUpperCase(),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),

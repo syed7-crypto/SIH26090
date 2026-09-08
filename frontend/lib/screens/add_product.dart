@@ -18,7 +18,7 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  static const _maxPhotos = 2;
+  static const _maxPhotos = 10;
   static const _productId = 'ART-001';
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _photos = [];
@@ -27,7 +27,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _takePhoto() async {
     if (_photos.length >= _maxPhotos) {
-      _showMessage('Maximum 2 images allowed per product listing.');
+      _showMessage('Maximum 10 images allowed per product listing.');
       return;
     }
     final photo = await _picker.pickImage(source: ImageSource.camera);
@@ -37,7 +37,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _choosePhotos() async {
     if (_photos.length >= _maxPhotos) {
-      _showMessage('Maximum 2 images allowed per product listing.');
+      _showMessage('Maximum 10 images allowed per product listing.');
       return;
     }
     final pickedPhotos = await _picker.pickMultiImage();
@@ -45,7 +45,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
     final remainingSlots = _maxPhotos - _photos.length;
     if (pickedPhotos.length > remainingSlots) {
-      _showMessage('Maximum 2 images allowed per product listing.');
+      _showMessage('Maximum 10 images allowed per product listing.');
     }
     setState(() => _photos.addAll(pickedPhotos.take(remainingSlots)));
   }
@@ -131,7 +131,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Take multiple photos from different angles. Add exactly 2 clear product photos.',
+                      'Take at least 2 clear photos from different angles. You can add up to 10 photos.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         height: 1.45,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -241,7 +241,7 @@ class _PhotoGuidance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const guidance = [
-      'Add exactly 2 clear photos',
+      'Add at least 2 clear photos (up to 10)',
       'Include a front or product view',
       'Add a close-up or detail view',
       'If possible, show it being used or worn',

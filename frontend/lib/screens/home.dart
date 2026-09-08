@@ -247,7 +247,9 @@ class _HomeProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.name.isEmpty ? 'Untitled product' : product.name,
+                  product.name.isEmpty
+                      ? 'UNTITLED PRODUCT'
+                      : product.name.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

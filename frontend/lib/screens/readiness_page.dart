@@ -38,7 +38,7 @@ class ReadinessPage extends StatelessWidget {
                       ),
                       CheckRow(
                         label: 'Product Photos',
-                        complete: (draft?.photoPaths.length ?? 0) == 2,
+                        complete: (draft?.photoPaths.length ?? 0) >= 2,
                       ),
                       CheckRow(
                         label: 'Product Name',

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../app_scope.dart';
+import '../core/theme/app_colors.dart';
 import '../screens/voice_results.dart';
 import '../services/api_service.dart';
 
@@ -20,7 +21,8 @@ class VoiceProductPage extends StatefulWidget {
   State<VoiceProductPage> createState() => _VoiceProductPageState();
 }
 
-class _VoiceProductPageState extends State<VoiceProductPage> {
+class _VoiceProductPageState extends State<VoiceProductPage>
+    with SingleTickerProviderStateMixin {
   static const _recordConfig = RecordConfig(encoder: AudioEncoder.wav);
   final AudioRecorder _recorder = AudioRecorder();
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -30,6 +32,16 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
   XFile? _selectedAudio;
   bool _isRecording = false;
   bool _isProcessing = false;
+  late final AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    );
+  }
 
   Future<void> _startRecording() async {
     try {
@@ -47,6 +59,7 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
         _elapsed = Duration.zero;
         _isRecording = true;
       });
+      _waveController.repeat(reverse: true);
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() => _elapsed += const Duration(seconds: 1));
       });
@@ -71,6 +84,7 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
         _selectedAudio = XFile(path);
         _isRecording = false;
       });
+      _waveController.stop();
     } catch (_) {
       if (mounted) setState(() => _isRecording = false);
       _showMessage('We could not save that recording. Please try again.');
@@ -164,6 +178,7 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _waveController.dispose();
     _recorder.dispose();
     super.dispose();
   }
@@ -194,24 +209,9 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    Container(
-                      width: 144,
-                      height: 144,
-                      decoration: BoxDecoration(
-                        color: _isRecording
-                            ? theme.colorScheme.errorContainer
-                            : theme.colorScheme.primaryContainer,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isRecording
-                            ? Icons.graphic_eq
-                            : Icons.mic_none_outlined,
-                        size: 64,
-                        color: _isRecording
-                            ? theme.colorScheme.onErrorContainer
-                            : theme.colorScheme.onPrimaryContainer,
-                      ),
+                    _RecordingWave(
+                      controller: _waveController,
+                      isRecording: _isRecording,
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -300,4 +300,71 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
       ),
     );
   }
+}
+
+class _RecordingWave extends StatelessWidget {
+  const _RecordingWave({required this.controller, required this.isRecording});
+  final Animation<double> controller;
+  final bool isRecording;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: controller,
+    builder: (context, _) {
+      final phase = controller.value;
+      return SizedBox(
+        height: 166,
+        width: 220,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            if (isRecording)
+              Container(
+                width: 156 + (phase * 20),
+                height: 156 + (phase * 20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.sageGreen.withValues(alpha: .25),
+                    width: 3,
+                  ),
+                ),
+              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: List.generate(7, (index) {
+                final base = 24 + ((index % 4) * 10);
+                final direction = index.isEven ? phase : 1 - phase;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: 7,
+                  height: isRecording ? base + (direction * 32) : 12,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: isRecording
+                        ? AppColors.sageGreen
+                        : AppColors.secondaryText.withValues(alpha: .45),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                );
+              }),
+            ),
+            Positioned(
+              bottom: 0,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: AppColors.mutedTerracotta,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mic, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }

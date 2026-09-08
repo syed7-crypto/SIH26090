@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/artisan.dart';
 import '../../services/storage_service.dart';
 import '../../state/app_state.dart';
+import '../../providers/language_provider.dart';
 import 'artisan_onboarding_screen.dart';
 import 'language_select_screen.dart';
 import 'welcome_screen.dart';
@@ -34,6 +36,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         onSelected: (value) => setState(() => _language = value),
         onContinue: () {
           widget.state.setLanguage(_language);
+          context.read<LanguageProvider>().setLanguage(_language);
           setState(() => _step = 2);
         },
       );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../app_scope.dart';
 import '../core/constants/languages.dart';
+import '../providers/language_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -32,8 +34,13 @@ class SettingsScreen extends StatelessWidget {
                           DropdownMenuItem(value: value, child: Text(value)),
                     )
                     .toList(),
-                onChanged: (value) {
-                  if (value != null) state.setLanguage(value);
+                onChanged: (value) async {
+                  if (value != null) {
+                    await state.setLanguage(value);
+                    if (context.mounted) {
+                      await context.read<LanguageProvider>().setLanguage(value);
+                    }
+                  }
                 },
               ),
             ),

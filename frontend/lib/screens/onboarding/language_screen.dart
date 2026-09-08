@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../app_scope.dart';
 import '../../core/constants/languages.dart';
+import '../../providers/language_provider.dart';
 
 /// Canonical language-selection route used by the standalone flow.
 class LanguageScreen extends StatelessWidget {
@@ -52,7 +54,14 @@ class LanguageScreen extends StatelessWidget {
                       _LanguageTile(
                         label: _scripts[language] ?? language,
                         selected: state.language == language,
-                        onTap: () => state.setLanguage(language),
+                        onTap: () async {
+                          await state.setLanguage(language);
+                          if (context.mounted) {
+                            await context.read<LanguageProvider>().setLanguage(
+                              language,
+                            );
+                          }
+                        },
                       ),
                   ],
                 ),

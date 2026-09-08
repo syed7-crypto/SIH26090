@@ -20,75 +20,85 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Photo Analysis Results')),
+      appBar: AppBar(title: const Text('Photo Quality Check')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your photos are ready',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _ReadinessCard(result: result),
-              if (result.media.photoReadiness.enhanced > 0) ...[
-                const SizedBox(height: 20),
-                Text(
-                  'AI improved your photos',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your photos are ready',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Lighting, contrast, or sharpness was improved safely.',
-                ),
-              ],
-              if (result.media.recommendedPrimaryPath != null) ...[
-                const SizedBox(height: 16),
-                _PrimaryMetadataCard(
-                  path: result.media.recommendedPrimaryPath!,
-                ),
-              ],
-              const SizedBox(height: 24),
-              Text(
-                'Your product photos',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (var index = 0; index < result.media.images.length; index++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _AnalyzedPhotoCard(
-                    analysis: result.media.images[index],
-                    localPhoto: index < localPhotos.length
-                        ? localPhotos[index]
-                        : null,
-                  ),
-                ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const VoiceProductPage(),
+                  const SizedBox(height: 20),
+                  _ReadinessCard(result: result),
+                  if (result.media.photoReadiness.enhanced > 0) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      'AI improved your photos',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.mic_none_outlined),
-                  label: const Text('Tell us about your product'),
-                ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Lighting, contrast, or sharpness was improved safely.',
+                    ),
+                  ],
+                  if (result.media.recommendedPrimaryPath != null) ...[
+                    const SizedBox(height: 16),
+                    _PrimaryMetadataCard(
+                      path: result.media.recommendedPrimaryPath!,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'Your product photos',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (
+                    var index = 0;
+                    index < result.media.images.length;
+                    index++
+                  )
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _AnalyzedPhotoCard(
+                        analysis: result.media.images[index],
+                        localPhoto: index < localPhotos.length
+                            ? localPhotos[index]
+                            : null,
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const VoiceProductPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.mic_none_outlined),
+                      label: const Text('Tell us about your product'),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -127,14 +137,14 @@ class _ReadinessCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'E-commerce readiness',
+                        'Photo Quality',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${readiness.score.toStringAsFixed(0)} / 100',
+                        '${readiness.score.toStringAsFixed(0)}% Photo Quality',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -292,11 +302,16 @@ class _LocalPhotoPreview extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        return Image.memory(
-          snapshot.data!,
-          width: double.infinity,
-          height: 180,
-          fit: BoxFit.cover,
+        return Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.memory(
+              snapshot.data!,
+              width: 170,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
+          ),
         );
       },
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../app_scope.dart';
 import '../core/app_theme.dart';
 import '../models/product_draft.dart';
+import '../providers/language_provider.dart';
 import '../widgets/common/local_product_image.dart';
 import 'add_product.dart';
 import 'home.dart';
@@ -221,7 +223,9 @@ class _ProductCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                product.name.isEmpty ? 'Untitled product' : product.name,
+                product.name.isEmpty
+                    ? 'UNTITLED PRODUCT'
+                    : product.name.toUpperCase(),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleSmall,
@@ -341,8 +345,13 @@ class _ProfilePage extends StatelessWidget {
                     ),
                   )
                   .toList(),
-              onChanged: (value) {
-                if (value != null) state.setLanguage(value);
+              onChanged: (value) async {
+                if (value != null) {
+                  await state.setLanguage(value);
+                  if (context.mounted) {
+                    await context.read<LanguageProvider>().setLanguage(value);
+                  }
+                }
               },
             ),
           ),
