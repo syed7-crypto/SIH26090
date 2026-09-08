@@ -18,6 +18,17 @@ MONEY_PLACES = Decimal("0.01")
 PRICE_ROUNDING_INCREMENT = Decimal("10")
 SUPPORTED_CURRENCY = "INR"
 
+# Client-facing collection guidance only. These values are never used as
+# defaults in the deterministic price calculation.
+MISSING_INPUT_QUESTIONS = {
+    "material": {"question": "How much raw material do you use for one product?", "guidance": "Include the actual material cost for this one item.", "input_type": "currency"},
+    "labour_hours": {"question": "How many hours does it take you to make one product?", "guidance": "Include the time you personally spend making this item.", "input_type": "hours"},
+    "labour_rate_per_hour": {"question": "What do you usually charge for one hour of your work?", "guidance": "Think about your hourly wage. For skilled craftwork, artisans often charge between ₹80 and ₹200 per hour.", "input_type": "currency_per_hour"},
+    "packaging": {"question": "How much do you spend on packaging for this product?", "guidance": "Include boxes, wrapping, labels, or other packaging used for one item. Enter 0 only if it is genuinely zero.", "input_type": "currency"},
+    "other": {"question": "Are there any other costs for making one product?", "guidance": "Include genuinely applicable costs not already listed. Enter 0 only if there are none.", "input_type": "currency"},
+    "desired_margin_percent": {"question": "What profit margin would you like to keep for business growth?", "guidance": "Profit is separate from your hourly labor wage. A standard margin for handmade products is 15% to 35%.", "input_type": "percentage"},
+}
+
 
 def _money(value: Decimal | int | float | str) -> float:
     """Return a currency amount rounded predictably to two decimal places."""
@@ -36,6 +47,7 @@ class PricingEngine:
     """Calculate a pricing result from product, cost, and market inputs."""
 
     COST_FIELDS = ("material", "labour_hours", "labour_rate_per_hour", "packaging", "other")
+    REQUIRED_COST_FIELDS = COST_FIELDS + ("desired_margin_percent",)
 
     def calculate(
         self,
@@ -68,6 +80,16 @@ class PricingEngine:
         except TypeError as error:
             raise ValueError("market_references must be an array of objects") from error
 
+        missing_inputs = [field for field in self.REQUIRED_COST_FIELDS if field not in artisan_costs or artisan_costs[field] is None]
+        if missing_inputs:
+            return {
+                "product_id": product_id,
+                "status": "needs_input",
+                "missing_inputs": missing_inputs,
+                "targeted_questions": self._targeted_questions(missing_inputs),
+                "financial_breakdown": None,
+            }
+
         values = {field: self._non_negative(artisan_costs, field) for field in self.COST_FIELDS}
         desired_margin = self._non_negative(artisan_costs, "desired_margin_percent")
         margin_type = artisan_costs.get("margin_type", "gross_margin")
@@ -87,6 +109,11 @@ class PricingEngine:
 
         return {
             "product_id": product_id,
+            "status": "priced",
+            "financial_breakdown": self._financial_breakdown(
+                total_cost, labour_cost, values["material"], values["packaging"],
+                values["other"], target_price,
+            ),
             "pricing": {
                 "costs": {
                     "material": _money(values["material"]),
@@ -103,6 +130,7 @@ class PricingEngine:
                 "margin_type": margin_type,
                 "currency": currency,
                 "market_reference": market,
+                "market_matching_basis": matching_basis,
                 "market_viability": market_viability,
                 "suggested_price": {
                     "minimum": _money(suggested_minimum),
@@ -128,6 +156,20 @@ class PricingEngine:
             raise ValueError(f"artisan_costs.{field} must be a finite non-negative number")
         return number
 
+    @staticmethod
+    def _targeted_questions(missing_inputs: Iterable[str]) -> list[dict[str, str]]:
+        return [{"field": field, **MISSING_INPUT_QUESTIONS[field]} for field in missing_inputs]
+
+    @staticmethod
+    def _financial_breakdown(total_cost: Decimal, labour_cost: Decimal, material: Decimal, packaging: Decimal, other: Decimal, target_price: Decimal) -> dict[str, float]:
+        profit_margin_amount = target_price - total_cost
+        return {
+            "break_even_price": _money(PricingEngine._round_customer_price(total_cost)),
+            "artisan_take_home": _money(labour_cost + profit_margin_amount),
+            "reinvestment_fund": _money(material + packaging + other),
+            "profit_margin_amount": _money(profit_margin_amount),
+        }
+
     def _comparable_prices(
         self, product: Mapping[str, Any], records: Iterable[Mapping[str, Any]]
     ) -> tuple[list[Decimal], list[str], str]:
@@ -137,32 +179,36 @@ class PricingEngine:
         if not category:
             return [], [], "none (product category is unavailable)"
 
-        category_records: list[Mapping[str, Any]] = []
+        compatible: list[Mapping[str, Any]] = []
         for record in records:
             validate_market_reference(record)
             if _normalise(record.get("category")) != category:
                 continue
-            category_records.append(record)
+            record_material = _normalise(record.get("material"))
+            record_craft = _normalise(record.get("craft_type"))
+            if (material and record_material and record_material != material) or (craft_type and record_craft and record_craft != craft_type):
+                continue
+            compatible.append(record)
 
-        # Prefer records that do not contradict known product attributes.  A
-        # reference with an unknown material/craft remains usable as a broader
-        # category comparison.
-        filtered = [
-            record for record in category_records
-            if (not material or not _normalise(record.get("material")) or _normalise(record.get("material")) == material)
-            and (not craft_type or not _normalise(record.get("craft_type")) or _normalise(record.get("craft_type")) == craft_type)
-        ]
-        selected = filtered
-        basis = "category"
-        if selected and filtered and (material or craft_type):
-            details = [name for name, value in (("material", material), ("craft type", craft_type)) if value]
-            basis = "category and " + " / ".join(details)
+        stages: list[tuple[str, tuple[tuple[str, str], ...]]] = []
+        if material and craft_type:
+            stages.append(("category + material + craft_type", ((material, "material"), (craft_type, "craft_type"))))
+        if material:
+            stages.append(("category + material", ((material, "material"),)))
+        if craft_type:
+            stages.append(("category + craft_type", ((craft_type, "craft_type"),)))
+        stages.append(("category only", ()))
+        for basis, attributes in stages:
+            selected = [record for record in compatible if all(_normalise(record.get(field)) == value for value, field in attributes)]
+            if selected:
+                return self._prices_and_sources(selected, basis)
+        return [], [], "none (no attribute-compatible category records)"
 
+    @staticmethod
+    def _prices_and_sources(records: Iterable[Mapping[str, Any]], basis: str) -> tuple[list[Decimal], list[str], str]:
         prices: list[Decimal] = []
         sources: list[str] = []
-        for record in selected:
-            if "price" not in record:
-                raise ValueError("each selected market reference requires price")
+        for record in records:
             try:
                 price = Decimal(str(record["price"]))
             except Exception as error:
@@ -173,11 +219,10 @@ class PricingEngine:
             source = record["source"].strip()
             if source not in sources:
                 sources.append(source)
-        no_match_basis = "none (no attribute-compatible category records)"
-        return prices, sources, basis if prices else no_match_basis
+        return prices, sources, basis
 
     @staticmethod
-    def _market_summary(prices: list[Decimal]) -> dict[str, Any]:
+    def _market_summary(prices: list[Decimal], sources: list[str]) -> dict[str, Any]:
         if not prices:
             return {"sample_size": 0, "minimum": None, "maximum": None, "median": None, "sources": []}
         return {
