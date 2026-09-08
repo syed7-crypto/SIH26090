@@ -17,6 +17,8 @@ class AppState extends ChangeNotifier {
   String get languageCode => languageCodeFor(_language);
   bool get onboardingComplete => _onboardingComplete;
   String? get activeProductId => _activeProductId;
+  VoiceProductInfo? get activeVoiceProduct => _activeProduct;
+  // Compatibility alias for callers using the shorter name.
   VoiceProductInfo? get activeProduct => _activeProduct;
 
   void setLanguage(String language) {
