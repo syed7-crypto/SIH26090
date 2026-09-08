@@ -44,7 +44,9 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text('Lighting, contrast, or sharpness was improved safely.'),
+                const Text(
+                  'Lighting, contrast, or sharpness was improved safely.',
+                ),
               ],
               if (result.media.recommendedPrimaryPath != null) ...[
                 const SizedBox(height: 16),
@@ -111,34 +113,34 @@ class _ReadinessCard extends StatelessWidget {
             Row(
               children: [
                 SizedBox(
-              width: 72,
-              height: 72,
-              child: CircularProgressIndicator(
-                value: readiness.score / 100,
-                strokeWidth: 8,
-                backgroundColor: theme.colorScheme.primaryContainer,
-              ),
-            ),
+                  width: 72,
+                  height: 72,
+                  child: CircularProgressIndicator(
+                    value: readiness.score / 100,
+                    strokeWidth: 8,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                  ),
+                ),
                 const SizedBox(width: 20),
                 Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'E-commerce readiness',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'E-commerce readiness',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${readiness.score.toStringAsFixed(0)} / 100',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${readiness.score.toStringAsFixed(0)} / 100',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
                 ),
               ],
             ),
@@ -164,7 +166,8 @@ class _ReadinessCounts extends StatelessWidget {
         Text('${readiness.accepted} photos ready'),
         if (readiness.enhanced > 0) Text('${readiness.enhanced} improved'),
         if (readiness.removed > 0) Text('${readiness.removed} removed'),
-        if (readiness.needsRetake > 0) Text('${readiness.needsRetake} to retake'),
+        if (readiness.needsRetake > 0)
+          Text('${readiness.needsRetake} to retake'),
       ],
     );
   }
@@ -194,7 +197,8 @@ class _AnalyzedPhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRemoved = analysis.status == 'removed' || analysis.status == 'needs_retake';
+    final isRemoved =
+        analysis.status == 'removed' || analysis.status == 'needs_retake';
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -228,11 +232,15 @@ class _AnalyzedPhotoCard extends StatelessWidget {
                 Text(analysis.reason),
                 if (analysis.isDuplicate) ...[
                   const SizedBox(height: 6),
-                  const Text('This photo was removed because it is a duplicate.'),
+                  const Text(
+                    'This photo was removed because it is a duplicate.',
+                  ),
                 ],
                 if (analysis.actions.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('Improved: ${analysis.actions.map(_humanAction).join(', ')}'),
+                  Text(
+                    'Improved: ${analysis.actions.map(_humanAction).join(', ')}',
+                  ),
                 ],
               ],
             ),

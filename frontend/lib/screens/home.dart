@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_scope.dart';
 import 'add_product.dart';
 
 class ArtisanHomePage extends StatelessWidget {
@@ -66,6 +67,7 @@ class ArtisanHomePage extends StatelessWidget {
                 height: 58,
                 child: FilledButton.icon(
                   onPressed: () {
+                    AppScope.maybeOf(context)?.startDraft();
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const AddProductPage(),

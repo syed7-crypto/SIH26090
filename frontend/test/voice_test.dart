@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,26 @@ class _FakeClient extends http.BaseClient {
       headers: {'content-type': 'application/json'},
     );
   }
+}
+
+class _TestAudioFile {
+  _TestAudioFile(this._directory, this.file);
+
+  final Directory _directory;
+  final File file;
+
+  XFile get xFile => XFile(file.path);
+
+  Future<void> dispose() => _directory.delete(recursive: true);
+}
+
+Future<_TestAudioFile> _createAudioFile(String filename) async {
+  final directory = await Directory.systemTemp.createTemp(
+    'artisan_voice_test_',
+  );
+  final file = File('${directory.path}${Platform.pathSeparator}$filename');
+  await file.writeAsBytes([1, 2]);
+  return _TestAudioFile(directory, file);
 }
 
 const _voiceJson = {
@@ -105,18 +126,57 @@ void main() {
     );
   });
 
-  test('preserves the selected audio filename and MIME type', () async {
+  test('preserves supported audio filenames and matching MIME types', () async {
     final client = _FakeClient(200, jsonEncode(_voiceJson));
     final service = ApiService(client: client);
 
-    await service.analyzeVoice(
-      productId: 'ART-001',
-      audio: XFile.fromData(Uint8List.fromList([1, 2]), name: 'story.ogg'),
-    );
+    for (final audioCase in <(String, String)>[
+      ('story.ogg', 'audio/ogg'),
+      ('artisan_voice.wav', 'audio/wav'),
+      ('recording.mp3', 'audio/mpeg'),
+      ('recording.OGG', 'audio/ogg'),
+    ]) {
+      final audio = await _createAudioFile(audioCase.$1);
+      addTearDown(audio.dispose);
+
+      await service.analyzeVoice(productId: 'ART-001', audio: audio.xFile);
+
+      final request = client.lastRequest! as http.MultipartRequest;
+      expect(request.files.single.filename, audioCase.$1);
+      expect(request.files.single.contentType.toString(), audioCase.$2);
+    }
+  });
+
+  test(
+    'uses a safe WAV fallback for audio files without an extension',
+    () async {
+      final client = _FakeClient(200, jsonEncode(_voiceJson));
+      final service = ApiService(client: client);
+      final audio = await _createAudioFile('recording');
+      addTearDown(audio.dispose);
+
+      await service.analyzeVoice(productId: 'ART-001', audio: audio.xFile);
+
+      final request = client.lastRequest! as http.MultipartRequest;
+      expect(request.files.single.filename, 'artisan_voice.wav');
+      expect(request.files.single.contentType.toString(), 'audio/wav');
+    },
+  );
+
+  test('does not expose directories in the uploaded audio filename', () async {
+    final client = _FakeClient(200, jsonEncode(_voiceJson));
+    final service = ApiService(client: client);
+    final audio = await _createAudioFile('recording.ogg');
+    addTearDown(audio.dispose);
+
+    await service.analyzeVoice(productId: 'ART-001', audio: audio.xFile);
 
     final request = client.lastRequest! as http.MultipartRequest;
-    expect(request.files.single.filename, 'story.ogg');
-    expect(request.files.single.contentType.toString(), 'audio/ogg');
+    expect(request.files.single.filename, 'recording.ogg');
+    expect(
+      request.files.single.filename,
+      isNot(contains(audio.file.parent.path)),
+    );
   });
 
   test('turns an unsupported voice format into a useful message', () async {

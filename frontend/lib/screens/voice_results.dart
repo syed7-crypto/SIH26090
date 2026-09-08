@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/voice_analysis.dart';
+import 'product_review_page.dart';
 
 class VoiceResultsPage extends StatelessWidget {
   const VoiceResultsPage({super.key, required this.result});
@@ -100,9 +101,13 @@ class VoiceResultsPage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Continue later'),
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ProductReviewPage(result: result),
+                    ),
+                  ),
+                  child: const Text('Review product details'),
                 ),
               ),
             ],

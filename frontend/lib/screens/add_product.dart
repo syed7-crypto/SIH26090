@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../app_scope.dart';
 import '../screens/photo_analysis_results.dart';
 import '../services/api_service.dart';
 
@@ -62,6 +63,17 @@ class _AddProductPageState extends State<AddProductPage> {
         productId: _productId,
         photos: List<XFile>.unmodifiable(_photos),
       );
+      if (!mounted) return;
+      final state = AppScope.maybeOf(context);
+      final draft = state?.activeDraft;
+      if (draft != null) {
+        await state!.updateDraft(
+          draft.copyWith(
+            photoPaths: _photos.map((photo) => photo.path).toList(),
+            photoReadiness: result.media.photoReadiness.score,
+          ),
+        );
+      }
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(

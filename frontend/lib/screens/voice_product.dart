@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../app_scope.dart';
 import '../screens/voice_results.dart';
 import '../services/api_service.dart';
 
@@ -20,7 +21,6 @@ class VoiceProductPage extends StatefulWidget {
 }
 
 class _VoiceProductPageState extends State<VoiceProductPage> {
-  static const _productId = 'ART-001';
   static const _recordConfig = RecordConfig(encoder: AudioEncoder.wav);
   final AudioRecorder _recorder = AudioRecorder();
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -86,13 +86,14 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
   }
 
   Future<void> _continue() async {
-    final audio = _selectedAudio ??
+    final audio =
+        _selectedAudio ??
         (_recordingPath == null ? null : XFile(_recordingPath!));
     if (audio == null || _isProcessing) return;
     setState(() => _isProcessing = true);
     try {
       final result = await _apiService.analyzeVoice(
-        productId: _productId,
+        productId: AppScope.maybeOf(context)?.activeDraft?.id ?? 'ART-001',
         audio: audio,
       );
       if (!mounted) return;

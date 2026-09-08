@@ -83,16 +83,24 @@ class PhotoReadiness {
   }
 
   factory PhotoReadiness.fromLegacy(List<PhotoImageAnalysis> images) {
-    final accepted = images.where((image) => image.status != 'removed' && image.status != 'needs_retake').length;
+    final accepted = images
+        .where(
+          (image) =>
+              image.status != 'removed' && image.status != 'needs_retake',
+        )
+        .length;
     return PhotoReadiness(
       score: images.isEmpty
           ? 0
-          : images.map((image) => image.qualityScore).reduce((a, b) => a + b) / images.length,
+          : images.map((image) => image.qualityScore).reduce((a, b) => a + b) /
+                images.length,
       totalUploaded: images.length,
       accepted: accepted,
       enhanced: 0,
       removed: images.where((image) => image.status == 'removed').length,
-      needsRetake: images.where((image) => image.status == 'needs_retake').length,
+      needsRetake: images
+          .where((image) => image.status == 'needs_retake')
+          .length,
       issues: const [],
     );
   }
@@ -140,11 +148,16 @@ class PhotoImageAnalysis {
       photoType: value['photo_type'] as String,
       isDuplicate: value['is_duplicate'] as bool,
       isRecommendedPrimary: value['is_recommended_primary'] as bool,
-      originalPath: value['original_path'] as String? ?? value['storage_path'] as String,
+      originalPath:
+          value['original_path'] as String? ?? value['storage_path'] as String,
       finalPath: value['final_path'] as String?,
       status: value['status'] as String? ?? 'kept',
-      qualityScoreBefore: _number(value['quality_score_before'] ?? value['quality_score']),
-      qualityScoreAfter: _number(value['quality_score_after'] ?? value['quality_score']),
+      qualityScoreBefore: _number(
+        value['quality_score_before'] ?? value['quality_score'],
+      ),
+      qualityScoreAfter: _number(
+        value['quality_score_after'] ?? value['quality_score'],
+      ),
       actions: _stringList(value['actions']),
       issuesBefore: _stringList(value['issues_before']),
       reason: value['reason'] as String? ?? 'Photo analyzed',

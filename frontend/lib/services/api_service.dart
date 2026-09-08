@@ -77,7 +77,9 @@ class ApiService {
     final uri = Uri.parse(
       '$baseUrl/api/v1/products/${Uri.encodeComponent(productId)}/voice/analyze',
     );
-    final filename = _audioFilename(audio.name);
+    final filename = _audioFilename(
+      audio.name.isNotEmpty ? audio.name : audio.path,
+    );
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
         http.MultipartFile.fromBytes(
@@ -156,10 +158,12 @@ class ApiService {
   }
 
   String _audioFilename(String name) {
-    final extension = name.split('.').last.toLowerCase();
+    final filename = name.split(RegExp(r'[\\/]')).last;
+    final lastDot = filename.lastIndexOf('.');
+    final extension = lastDot > 0 && lastDot < filename.length - 1
+        ? filename.substring(lastDot + 1).toLowerCase()
+        : '';
     const supported = {'wav', 'mp3', 'flac', 'ogg'};
-    return name.isNotEmpty && supported.contains(extension)
-        ? name
-        : 'artisan_voice.wav';
+    return supported.contains(extension) ? filename : 'artisan_voice.wav';
   }
 }
