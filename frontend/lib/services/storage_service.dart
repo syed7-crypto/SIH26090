@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/product_draft.dart';
+import '../models/artisan.dart';
 
 class StorageService {
   static const _productsKey = 'karigar_products';
   static const _languageKey = 'karigar_language';
+  static const _onboardingKey = 'karigar_onboarding_done';
+  static const _artisanKey = 'karigar_artisan';
 
   Future<List<ProductDraft>> loadProducts() async {
     final preferences = await SharedPreferences.getInstance();
@@ -36,4 +39,21 @@ class StorageService {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_languageKey, language);
   }
+
+  Future<bool> hasCompletedOnboarding() async =>
+      (await SharedPreferences.getInstance()).getBool(_onboardingKey) ?? false;
+  Future<void> completeOnboarding() async =>
+      (await SharedPreferences.getInstance()).setBool(_onboardingKey, true);
+  Future<Artisan> loadArtisan() async {
+    final raw = (await SharedPreferences.getInstance()).getString(_artisanKey);
+    return raw == null
+        ? const Artisan()
+        : Artisan.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveArtisan(Artisan artisan) async =>
+      (await SharedPreferences.getInstance()).setString(
+        _artisanKey,
+        jsonEncode(artisan.toJson()),
+      );
 }
