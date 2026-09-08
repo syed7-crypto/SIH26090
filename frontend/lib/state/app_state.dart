@@ -10,14 +10,17 @@ class AppState extends ChangeNotifier {
   List<ProductDraft> _products = [];
   String _language = 'English';
   ProductDraft? _activeDraft;
+  bool _onboardingComplete = false;
 
   List<ProductDraft> get products => List.unmodifiable(_products);
   String get language => _language;
   ProductDraft? get activeDraft => _activeDraft;
+  bool get onboardingComplete => _onboardingComplete;
 
   Future<void> load() async {
     _products = await _storage.loadProducts();
     _language = await _storage.loadLanguage();
+    _onboardingComplete = await _storage.hasCompletedOnboarding();
     notifyListeners();
   }
 
@@ -47,6 +50,12 @@ class AppState extends ChangeNotifier {
   Future<void> setLanguage(String language) async {
     _language = language;
     await _storage.saveLanguage(language);
+    notifyListeners();
+  }
+
+  Future<void> completeOnboarding() async {
+    _onboardingComplete = true;
+    await _storage.completeOnboarding();
     notifyListeners();
   }
 

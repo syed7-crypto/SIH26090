@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_scope.dart';
 import 'core/app_theme.dart';
 import 'screens/app_shell.dart';
+import 'screens/onboarding/onboarding_flow.dart';
 import 'state/app_state.dart';
 
 class KarigarAiApp extends StatelessWidget {
@@ -15,7 +16,9 @@ class KarigarAiApp extends StatelessWidget {
       title: 'KarigarAI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const AppShell(),
+      home: state.onboardingComplete
+          ? const AppShell()
+          : OnboardingFlow(state: state),
     ),
   );
 }
