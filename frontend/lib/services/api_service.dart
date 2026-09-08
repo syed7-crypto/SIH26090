@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../models/photo_analysis.dart';
+import '../models/pricing_analysis.dart';
 import '../models/voice_analysis.dart';
 
 class ApiException implements Exception {
@@ -123,6 +124,51 @@ class ApiService {
       throw ApiException('Could not connect to the server: ${error.message}');
     } catch (error) {
       throw ApiException('Voice upload failed: $error');
+    }
+  }
+
+  Future<PricingAnalysisResult> analyzePricing({
+    required String productId,
+    required ProductPricingInput product,
+    required ArtisanCosts artisanCosts,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/api/v1/products/${Uri.encodeComponent(productId)}/pricing/analyze',
+    );
+    final request = http.Request('POST', uri)
+      ..headers['content-type'] = 'application/json';
+    request.body = jsonEncode(
+      PricingRequest(product: product, artisanCosts: artisanCosts).toJson(),
+    );
+
+    try {
+      final response = await _client.send(request);
+      final body = await response.stream.bytesToString();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _errorMessage(
+            body,
+            fallback: 'Pricing request failed. Please try again.',
+          ),
+          statusCode: response.statusCode,
+        );
+      }
+
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const ApiException('The server returned an invalid response.');
+      }
+      return PricingAnalysisResult.fromJson(decoded);
+    } on ApiException {
+      rethrow;
+    } on FormatException {
+      throw const ApiException(
+        'The server returned an invalid pricing response.',
+      );
+    } on http.ClientException catch (error) {
+      throw ApiException('Could not connect to the server: ${error.message}');
+    } catch (error) {
+      throw ApiException('Pricing request failed: $error');
     }
   }
 
