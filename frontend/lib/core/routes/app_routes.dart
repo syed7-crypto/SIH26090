@@ -1,7 +1,24 @@
 abstract final class AppRoutes {
+  static const splash = '/';
+  static const welcome = '/welcome';
+  static const languageSelect = '/language-select';
+  static const artisanOnboarding = '/artisan-onboarding';
   static const home = '/home';
   static const products = '/products';
-  static const create = '/create';
+  static const photoCapture = '/create/photo-capture';
+  static const qualityCheck = '/create/quality-check';
+  static const voice = '/create/voice';
+  static const aiProcessing = '/create/ai-processing';
+  static const infoEdit = '/create/info-edit';
+  static const pricing = '/create/pricing';
+  static const readiness = '/create/readiness';
+  static const listingReady = '/create/listing-ready';
+  static const preview = '/create/preview';
+  static const share = '/create/share';
+  static const create = photoCapture;
   static const marketplace = '/marketplace';
   static const profile = '/profile';
+  static const settings = '/settings';
+  static const logoutDialog = '/dialog/logout';
+  static const photoRetake = '/create/photo-retake';
 }

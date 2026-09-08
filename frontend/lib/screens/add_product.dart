@@ -17,7 +17,7 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
-  static const _maxPhotos = 5;
+  static const _maxPhotos = 2;
   static const _productId = 'ART-001';
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _photos = [];
@@ -26,7 +26,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _takePhoto() async {
     if (_photos.length >= _maxPhotos) {
-      _showMessage('You can add up to 5 photos.');
+      _showMessage('Maximum 2 images allowed per product listing.');
       return;
     }
     final photo = await _picker.pickImage(source: ImageSource.camera);
@@ -36,7 +36,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
   Future<void> _choosePhotos() async {
     if (_photos.length >= _maxPhotos) {
-      _showMessage('You can add up to 5 photos.');
+      _showMessage('Maximum 2 images allowed per product listing.');
       return;
     }
     final pickedPhotos = await _picker.pickMultiImage();
@@ -44,7 +44,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
     final remainingSlots = _maxPhotos - _photos.length;
     if (pickedPhotos.length > remainingSlots) {
-      _showMessage('You can add only $remainingSlots more photo(s).');
+      _showMessage('Maximum 2 images allowed per product listing.');
     }
     setState(() => _photos.addAll(pickedPhotos.take(remainingSlots)));
   }
@@ -129,16 +129,18 @@ class _AddProductPageState extends State<AddProductPage> {
                     ),
                     const SizedBox(height: 24),
                     _PhotoActions(
-                      onCameraPressed: _takePhoto,
-                      onGalleryPressed: _choosePhotos,
+                      onCameraPressed: _photos.length < _maxPhotos
+                          ? _takePhoto
+                          : null,
+                      onGalleryPressed: _photos.length < _maxPhotos
+                          ? _choosePhotos
+                          : null,
                     ),
                     const SizedBox(height: 28),
                     _PhotoGuidance(theme: theme),
                     const SizedBox(height: 28),
                     Text(
-                      _photos.isEmpty
-                          ? 'Selected photos'
-                          : 'Selected photos (${_photos.length}/$_maxPhotos)',
+                      '${_photos.length} / $_maxPhotos Photos Captured',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -189,8 +191,8 @@ class _PhotoActions extends StatelessWidget {
     required this.onCameraPressed,
     required this.onGalleryPressed,
   });
-  final VoidCallback onCameraPressed;
-  final VoidCallback onGalleryPressed;
+  final VoidCallback? onCameraPressed;
+  final VoidCallback? onGalleryPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +231,7 @@ class _PhotoGuidance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const guidance = [
-      'Add 2–5 clear photos',
+      'Add exactly 2 clear photos',
       'Include a front or product view',
       'Add a close-up or detail view',
       'If possible, show it being used or worn',

@@ -10,12 +10,12 @@ class ProductDraft {
     this.dimensions = '',
     this.description = '',
     this.language = 'English',
-    this.photoPaths = const [],
+    List<String> photoPaths = const [],
     this.photoReadiness,
     this.voiceTranscript = '',
     this.price,
     this.status = ProductStatus.draft,
-  });
+  }) : photoPaths = List.unmodifiable(photoPaths.take(2));
 
   factory ProductDraft.empty(String id, {String language = 'English'}) =>
       ProductDraft(id: id, createdAt: DateTime.now(), language: language);
@@ -87,16 +87,19 @@ class ProductDraft {
   );
 
   int get readiness {
-    var complete = 0;
-    const total = 7;
-    if (photoPaths.isNotEmpty) complete++;
-    if (name.trim().isNotEmpty) complete++;
-    if (category.trim().isNotEmpty) complete++;
-    if (material.trim().isNotEmpty) complete++;
-    if (description.trim().isNotEmpty) complete++;
-    if (dimensions.trim().isNotEmpty) complete++;
-    if (price != null && price! > 0) complete++;
-    return (complete / total * 100).round();
+    double score = photoPaths.length == 2
+        ? 20
+        : photoPaths.isNotEmpty
+        ? 10
+        : 0;
+    const fieldWeight = 80 / 6;
+    if (name.trim().isNotEmpty) score += fieldWeight;
+    if (category.trim().isNotEmpty) score += fieldWeight;
+    if (material.trim().isNotEmpty) score += fieldWeight;
+    if (description.trim().isNotEmpty) score += fieldWeight;
+    if (dimensions.trim().isNotEmpty) score += fieldWeight;
+    if (price != null && price! > 0) score += fieldWeight;
+    return score.round();
   }
 
   Map<String, dynamic> toJson() => {

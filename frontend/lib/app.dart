@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'app_scope.dart';
 import 'core/app_theme.dart';
-import 'screens/app_shell.dart';
-import 'screens/onboarding/onboarding_flow.dart';
+import 'core/routes/route_generator.dart';
+import 'screens/onboarding/splash_screen.dart';
 import 'state/app_state.dart';
 
 class KarigarAiApp extends StatelessWidget {
@@ -16,9 +16,8 @@ class KarigarAiApp extends StatelessWidget {
       title: 'KarigarAI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: state.onboardingComplete
-          ? const AppShell()
-          : OnboardingFlow(state: state),
+      onGenerateRoute: RouteGenerator.generate,
+      home: SplashScreen(state: state),
     ),
   );
 }

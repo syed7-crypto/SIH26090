@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import '../core/constants/api_constants.dart';
 import '../models/photo_analysis.dart';
 import '../models/voice_analysis.dart';
 
@@ -19,7 +20,7 @@ class ApiException implements Exception {
 
 class ApiService {
   ApiService({String? baseUrl, http.Client? client})
-    : baseUrl = baseUrl ?? 'http://localhost:8000',
+    : baseUrl = baseUrl ?? ApiConstants.baseUrl,
       _client = client ?? http.Client();
 
   final String baseUrl;

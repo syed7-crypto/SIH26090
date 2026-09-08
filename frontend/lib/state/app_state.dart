@@ -11,33 +11,43 @@ class AppState extends ChangeNotifier {
   String _language = 'English';
   ProductDraft? _activeDraft;
   bool _onboardingComplete = false;
+  bool _notificationsEnabled = true;
+  double _voiceGuidanceSpeed = 1;
 
   List<ProductDraft> get products => List.unmodifiable(_products);
   String get language => _language;
   ProductDraft? get activeDraft => _activeDraft;
   bool get onboardingComplete => _onboardingComplete;
+  bool get notificationsEnabled => _notificationsEnabled;
+  double get voiceGuidanceSpeed => _voiceGuidanceSpeed;
 
   Future<void> load() async {
     _products = await _storage.loadProducts();
     _language = await _storage.loadLanguage();
     _onboardingComplete = await _storage.hasCompletedOnboarding();
+    _notificationsEnabled = await _storage.loadNotificationsEnabled();
+    _voiceGuidanceSpeed = await _storage.loadVoiceGuidanceSpeed();
+    _activeDraft = await _storage.loadActiveDraft();
     notifyListeners();
   }
 
   ProductDraft startDraft() {
     final id = 'ART-${DateTime.now().millisecondsSinceEpoch}';
     _activeDraft = ProductDraft.empty(id, language: _language);
+    _storage.saveActiveDraft(_activeDraft);
     notifyListeners();
     return _activeDraft!;
   }
 
   void openDraft(ProductDraft draft) {
     _activeDraft = draft;
+    _storage.saveActiveDraft(draft);
     notifyListeners();
   }
 
   Future<void> updateDraft(ProductDraft draft) async {
     _activeDraft = draft;
+    await _storage.saveActiveDraft(draft);
     await _upsert(draft);
     notifyListeners();
   }
@@ -56,6 +66,24 @@ class AppState extends ChangeNotifier {
   Future<void> completeOnboarding() async {
     _onboardingComplete = true;
     await _storage.completeOnboarding();
+    notifyListeners();
+  }
+
+  Future<void> resetOnboarding() async {
+    _onboardingComplete = false;
+    await _storage.resetOnboarding();
+    notifyListeners();
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    _notificationsEnabled = value;
+    await _storage.saveNotificationsEnabled(value);
+    notifyListeners();
+  }
+
+  Future<void> setVoiceGuidanceSpeed(double value) async {
+    _voiceGuidanceSpeed = value;
+    await _storage.saveVoiceGuidanceSpeed(value);
     notifyListeners();
   }
 
