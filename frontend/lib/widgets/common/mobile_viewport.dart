@@ -29,23 +29,54 @@ class _FloatingBubblesState extends State<FloatingBubbles>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat(reverse: true);
   }
+
   @override
-  void dispose() { _controller.dispose(); super.dispose(); }
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _controller,
     child: widget.child,
     builder: (context, child) {
       final shift = (_controller.value - .5) * 14;
-      return Stack(children: [
-        Positioned(top: 18 + shift, right: -14, child: _bubble(58, AppColors.sageGreen.withValues(alpha: .10))),
-        Positioned(top: 230 - shift, left: -22, child: _bubble(76, AppColors.mutedTerracotta.withValues(alpha: .08))),
-        Positioned(bottom: 60 + shift, right: 4, child: _bubble(34, AppColors.sageGreen.withValues(alpha: .08))),
-        child!,
-      ]);
+      return Stack(
+        children: [
+          Positioned(
+            top: 18 + shift,
+            right: -14,
+            child: _bubble(58, AppColors.sageGreen.withValues(alpha: .10)),
+          ),
+          Positioned(
+            top: 230 - shift,
+            left: -22,
+            child: _bubble(
+              76,
+              AppColors.mutedTerracotta.withValues(alpha: .08),
+            ),
+          ),
+          Positioned(
+            bottom: 60 + shift,
+            right: 4,
+            child: _bubble(34, AppColors.sageGreen.withValues(alpha: .08)),
+          ),
+          child!,
+        ],
+      );
     },
   );
-  Widget _bubble(double size, Color color) => IgnorePointer(child: Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, color: color)));
+  Widget _bubble(double size, Color color) => IgnorePointer(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    ),
+  );
 }

@@ -36,9 +36,21 @@ abstract final class AppTheme {
       ),
     ),
     textTheme: const TextTheme(
-      headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: charcoal),
-      titleLarge: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: charcoal),
-      titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: charcoal),
+      headlineSmall: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+        color: charcoal,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        color: charcoal,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: charcoal,
+      ),
       bodyLarge: TextStyle(fontSize: 15, height: 1.4, color: charcoal),
       bodyMedium: TextStyle(fontSize: 13, height: 1.35, color: secondaryText),
       labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),

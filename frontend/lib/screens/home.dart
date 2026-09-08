@@ -27,6 +27,7 @@ class _HomeBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppScope.maybeOf(context);
     final theme = Theme.of(context);
+    String tr(String key, String fallback) => state?.translate(key) ?? fallback;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -68,12 +69,17 @@ class _HomeBody extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hello, Artisan',
+                          tr('hello_artisan', 'Hello, Artisan'),
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const Text('Let us share your craft with the world.'),
+                        Text(
+                          tr(
+                            'home_support',
+                            'Let us share your craft with the world.',
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -101,15 +107,18 @@ class _HomeBody extends StatelessWidget {
                     const Icon(Icons.add_circle, color: Colors.white, size: 34),
                     const SizedBox(height: 14),
                     Text(
-                      'Create New Product',
+                      tr('create_new_product', 'Create New Product'),
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Turn your product into a market-ready listing',
+                    Text(
+                      tr(
+                        'create_support',
+                        'Turn your product into a market-ready listing',
+                      ),
                       style: TextStyle(color: Colors.white),
                     ),
                     const SizedBox(height: 14),
@@ -137,7 +146,7 @@ class _HomeBody extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _Metric(
-                      label: 'Total Products',
+                      label: tr('total_products', 'Total Products'),
                       value: '${products.length}',
                     ),
                   ),
@@ -164,13 +173,13 @@ class _HomeBody extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Recent Products',
+                      tr('recent_products', 'Recent Products'),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const Text('View All >'),
+                  Text(tr('view_all', 'View All >')),
                 ],
               ),
               const Text('Your Products', style: TextStyle(fontSize: 0)),
