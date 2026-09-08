@@ -1,9 +1,39 @@
 import 'package:flutter/material.dart';
 
 import 'add_product.dart';
+import '../services/firestore_service.dart';
 
-class ArtisanHomePage extends StatelessWidget {
-  const ArtisanHomePage({super.key});
+class ArtisanHomePage extends StatefulWidget {
+  const ArtisanHomePage({super.key, this.firestoreService});
+
+  final FirestoreService? firestoreService;
+
+  @override
+  State<ArtisanHomePage> createState() => _ArtisanHomePageState();
+}
+
+class _ArtisanHomePageState extends State<ArtisanHomePage> {
+  late final FirestoreService _firestoreService =
+      widget.firestoreService ?? FirestoreService();
+  List<Map<String, dynamic>> _products = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    try {
+      await _firestoreService.getArtisan(FirestoreService.defaultArtisanId);
+      final products = await _firestoreService.getProducts(
+        FirestoreService.defaultArtisanId,
+      );
+      if (mounted) setState(() => _products = products);
+    } on FirestoreServiceException {
+      // Home remains usable offline; a future sync indicator can be added here.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +128,7 @@ class ArtisanHomePage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '0 items',
+                    '${_products.length} ${_products.length == 1 ? 'item' : 'items'}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -106,10 +136,41 @@ class ArtisanHomePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _EmptyProductsCard(theme: theme),
+              if (_products.isEmpty)
+                _EmptyProductsCard(theme: theme)
+              else
+                for (final product in _products)
+                  _ProductCard(product: product, theme: theme),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product, required this.theme});
+
+  final Map<String, dynamic> product;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = product['name'] as String?;
+    final category = product['category'] as String?;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Icon(
+            Icons.inventory_2_outlined,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        title: Text(name == null || name.isEmpty ? 'Saved product' : name),
+        subtitle: category == null || category.isEmpty ? null : Text(category),
       ),
     );
   }

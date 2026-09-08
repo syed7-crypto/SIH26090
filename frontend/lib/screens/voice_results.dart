@@ -1,11 +1,35 @@
 import 'package:flutter/material.dart';
 
 import '../models/voice_analysis.dart';
+import '../services/firestore_service.dart';
 
 class VoiceResultsPage extends StatelessWidget {
-  const VoiceResultsPage({super.key, required this.result});
+  const VoiceResultsPage({
+    super.key,
+    required this.result,
+    this.firestoreService,
+  });
 
   final VoiceAnalysisResult result;
+  final FirestoreService? firestoreService;
+
+  Future<void> _saveProduct(BuildContext context) async {
+    try {
+      await (firestoreService ?? FirestoreService()).saveVoiceProduct(
+        artisanId: FirestoreService.defaultArtisanId,
+        result: result,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Product saved.')));
+      }
+    } on FirestoreServiceException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +121,16 @@ class VoiceResultsPage extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () => _saveProduct(context),
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Save product'),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 56,
