@@ -20,7 +20,7 @@ class ApiException implements Exception {
 
 class ApiService {
   ApiService({String? baseUrl, http.Client? client})
-    : baseUrl = baseUrl ?? 'http://localhost:8000',
+    : baseUrl = baseUrl ?? 'http://localhost:8001',
       _client = client ?? http.Client();
 
   final String baseUrl;
