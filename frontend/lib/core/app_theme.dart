@@ -53,4 +53,7 @@ abstract final class AppTheme {
       ),
     ),
   );
+
+  /// Compatibility alias for Provider/bootstrap examples.
+  static ThemeData get lightTheme => light;
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../widgets/common/karigar_design.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key, required this.onContinue});
@@ -9,97 +8,115 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.ivory,
     body: SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.sizeOf(context).height - 48,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
-              const BrandMark(size: 62),
-              const SizedBox(height: 22),
-              Text(
-                'Welcome, Artisan',
-                style: Theme.of(context).textTheme.displaySmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 20),
+            const Text(
+              'KarigarAI',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepForestGreen,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Turn your handmade products into market-ready digital listings using your voice and photos.',
-                softWrap: true,
-              ),
-              const SizedBox(height: 28),
-              Container(
-                height: 220,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.sageGreen.withValues(alpha: .13),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 74,
-                      color: AppColors.deepForestGreen,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Your craft has a story to tell',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              FilledButton(
-                onPressed: onContinue,
-                child: const Text('Get Started'),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: onContinue,
-                child: const Text('I Already Have an Account'),
-              ),
-              const SizedBox(height: 18),
-              const Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _FeatureTag('Simple'),
-                  _FeatureTag('Voice Enabled'),
-                  _FeatureTag('AI Powered'),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tradition Meets Technology',
+              style: TextStyle(fontSize: 16, color: AppColors.secondaryText),
+            ),
+            const SizedBox(height: 40),
+            Container(
+              height: 260,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
-            ],
-          ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.storefront_rounded,
+                    size: 80,
+                    color: AppColors.sageGreen,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Empowering Indian Artisans',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.charcoal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            const Text(
+              'Turn your handmade products into market-ready digital listings using your voice and photos.',
+              textAlign: TextAlign.center,
+              softWrap: true,
+              style: TextStyle(color: AppColors.secondaryText, height: 1.4),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.mutedTerracotta,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: onContinue,
+                child: const Text(
+                  'Get Started',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.sageGreen),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: onContinue,
+                child: const Text(
+                  'I Already Have an Account',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.sageGreen,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ),
-  );
-}
-
-class _FeatureTag extends StatelessWidget {
-  const _FeatureTag(this.label);
-  final String label;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(99),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(fontSize: 12, color: AppColors.sageGreen),
     ),
   );
 }
