@@ -2,36 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../app_scope.dart';
 import '../models/voice_analysis.dart';
-import '../services/firestore_service.dart';
+import '../models/photo_analysis.dart';
 import 'pricing.dart';
 
 class VoiceResultsPage extends StatelessWidget {
   const VoiceResultsPage({
     super.key,
     required this.result,
-    this.firestoreService,
+    this.photoResult,
   });
 
   final VoiceAnalysisResult result;
-  final FirestoreService? firestoreService;
-
-  Future<void> _saveProduct(BuildContext context) async {
-    try {
-      await (firestoreService ?? FirestoreService()).saveVoiceProduct(
-        artisanId: FirestoreService.defaultArtisanId,
-        result: result,
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Product saved.')));
-      }
-    } on FirestoreServiceException catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
-      }
-    }
-  }
+  final PhotoAnalysisResult? photoResult;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +45,7 @@ class VoiceResultsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'AI understood',
+                'Product details',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -137,22 +119,14 @@ class VoiceResultsPage extends StatelessWidget {
                         builder: (_) => PricingPage(
                           productId: result.productId,
                           product: result.product,
+                          voiceResult: result,
+                          photoResult: photoResult,
                         ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.price_check_outlined),
-                  label: const Text('Get Price Recommendation'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton.icon(
-                  onPressed: () => _saveProduct(context),
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Save product'),
+                  label: const Text('Get Price Recommendation →'),
                 ),
               ),
               const SizedBox(height: 12),

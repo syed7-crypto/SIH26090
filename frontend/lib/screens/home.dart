@@ -164,18 +164,48 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = product['name'] as String?;
     final category = product['category'] as String?;
+    final craftType = product['craftType'] as String?;
+    final pricing = product['pricing'];
+    final priceRange = pricing is Map<String, dynamic>
+        ? _priceRange(pricing)
+        : null;
+    final photoUrl = _displayablePhotoUrl(product['photos']);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(
-            Icons.inventory_2_outlined,
-            color: theme.colorScheme.primary,
-          ),
-        ),
+        leading: photoUrl == null
+            ? CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  photoUrl,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => CircleAvatar(
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
         title: Text(name == null || name.isEmpty ? 'Saved product' : name),
-        subtitle: category == null || category.isEmpty ? null : Text(category),
+        subtitle: Text(
+          [
+            if (category != null && category.isNotEmpty) category,
+            if (craftType != null && craftType.isNotEmpty) craftType,
+            if (priceRange != null) priceRange,
+          ].join(' • '),
+        ),
+        trailing: const Chip(label: Text('Ready to sell')),
         onTap: () {
           final productId = product['id'];
           if (productId is String) {
@@ -184,6 +214,32 @@ class _ProductCard extends StatelessWidget {
         },
       ),
     );
+  }
+
+  String? _priceRange(Map<String, dynamic> pricing) {
+    final minimum = pricing['suggested_minimum'];
+    final maximum = pricing['suggested_maximum'];
+    if (minimum is! num || maximum is! num) return null;
+    return '₹${minimum.toStringAsFixed(0)} – ₹${maximum.toStringAsFixed(0)}';
+  }
+
+  String? _displayablePhotoUrl(dynamic photos) {
+    if (photos is! List) return null;
+    for (final photo in photos) {
+      if (photo is String && _isDisplayableUrl(photo)) return photo;
+      if (photo is Map) {
+        final candidate = photo['url'];
+        if (candidate is String && _isDisplayableUrl(candidate)) {
+          return candidate;
+        }
+      }
+    }
+    return null;
+  }
+
+  bool _isDisplayableUrl(String value) {
+    final uri = Uri.tryParse(value);
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 }
 

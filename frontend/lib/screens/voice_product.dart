@@ -8,12 +8,19 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../screens/voice_results.dart';
+import '../models/photo_analysis.dart';
 import '../services/api_service.dart';
 
 class VoiceProductPage extends StatefulWidget {
-  const VoiceProductPage({super.key, required this.productId, this.apiService});
+  const VoiceProductPage({
+    super.key,
+    required this.productId,
+    this.photoResult,
+    this.apiService,
+  });
 
   final String productId;
+  final PhotoAnalysisResult? photoResult;
   final ApiService? apiService;
 
   @override
@@ -98,7 +105,10 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => VoiceResultsPage(result: result),
+          builder: (_) => VoiceResultsPage(
+            result: result,
+            photoResult: widget.photoResult,
+          ),
         ),
       );
     } on ApiException catch (error) {

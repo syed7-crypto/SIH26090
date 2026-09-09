@@ -25,7 +25,7 @@ class ArtisanAiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const brandGreen = Color(0xFF176B5B);
+    const brandGreen = Color(0xFF0F6B5F);
 
     return MaterialApp(
       title: 'Artisan AI',
