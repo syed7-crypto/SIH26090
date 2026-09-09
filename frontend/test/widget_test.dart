@@ -24,20 +24,22 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify the actual user-visible destination reached by Home's route.
-    expect(find.text('Show us your product'), findsOneWidget);
+    expect(find.text('Add photos of your product'), findsOneWidget);
     expect(find.text('Take photo'), findsOneWidget);
     expect(find.text('Choose photos'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Continue →'), findsOneWidget);
   });
 
   testWidgets('continue is disabled before two photos are selected', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(MaterialApp(home: const AddProductPage()));
+    await tester.pumpWidget(
+      const MaterialApp(home: AddProductPage(productId: 'TEST-PRODUCT')),
+    );
 
     final continueButton = tester.widget<FilledButton>(
       find.ancestor(
-        of: find.text('Continue'),
+        of: find.text('Continue →'),
         matching: find.byType(FilledButton),
       ),
     );

@@ -8,11 +8,19 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../screens/voice_results.dart';
+import '../models/photo_analysis.dart';
 import '../services/api_service.dart';
 
 class VoiceProductPage extends StatefulWidget {
-  const VoiceProductPage({super.key, this.apiService});
+  const VoiceProductPage({
+    super.key,
+    required this.productId,
+    this.photoResult,
+    this.apiService,
+  });
 
+  final String productId;
+  final PhotoAnalysisResult? photoResult;
   final ApiService? apiService;
 
   @override
@@ -20,7 +28,6 @@ class VoiceProductPage extends StatefulWidget {
 }
 
 class _VoiceProductPageState extends State<VoiceProductPage> {
-  static const _productId = 'ART-001';
   static const _recordConfig = RecordConfig(encoder: AudioEncoder.wav);
   final AudioRecorder _recorder = AudioRecorder();
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -92,13 +99,16 @@ class _VoiceProductPageState extends State<VoiceProductPage> {
     setState(() => _isProcessing = true);
     try {
       final result = await _apiService.analyzeVoice(
-        productId: _productId,
+        productId: widget.productId,
         audio: audio,
       );
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => VoiceResultsPage(result: result),
+          builder: (_) => VoiceResultsPage(
+            result: result,
+            photoResult: widget.photoResult,
+          ),
         ),
       );
     } on ApiException catch (error) {

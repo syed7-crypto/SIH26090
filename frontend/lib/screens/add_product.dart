@@ -7,8 +7,9 @@ import '../screens/photo_analysis_results.dart';
 import '../services/api_service.dart';
 
 class AddProductPage extends StatefulWidget {
-  const AddProductPage({super.key, this.apiService});
+  const AddProductPage({super.key, required this.productId, this.apiService});
 
+  final String productId;
   final ApiService? apiService;
 
   @override
@@ -17,7 +18,6 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   static const _maxPhotos = 5;
-  static const _productId = 'ART-001';
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _photos = [];
   late final ApiService _apiService = widget.apiService ?? ApiService();
@@ -59,7 +59,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
     try {
       final result = await _apiService.analyzePhotos(
-        productId: _productId,
+        productId: widget.productId,
         photos: List<XFile>.unmodifiable(_photos),
       );
       if (!mounted) return;
@@ -68,6 +68,7 @@ class _AddProductPageState extends State<AddProductPage> {
           builder: (_) => PhotoAnalysisResultsPage(
             result: result,
             localPhotos: List<XFile>.unmodifiable(_photos),
+            productId: widget.productId,
           ),
         ),
       );
@@ -102,14 +103,14 @@ class _AddProductPageState extends State<AddProductPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Show us your product',
+                      'Add photos of your product',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Add clear photos of your product. You can add photos from your gallery or take new ones.',
+                      'Take clear photos or choose them from your gallery.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         height: 1.45,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -122,6 +123,15 @@ class _AddProductPageState extends State<AddProductPage> {
                     ),
                     const SizedBox(height: 28),
                     _PhotoGuidance(theme: theme),
+                    if (_isProcessing) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Checking clarity, lighting and quality...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 28),
                     Text(
                       _photos.isEmpty
@@ -158,10 +168,10 @@ class _AddProductPageState extends State<AddProductPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 12),
-                            Text('Processing photos...'),
+                            Text('Preparing your product photos...'),
                           ],
                         )
-                      : const Text('Continue'),
+                      : const Text('Continue →'),
                 ),
               ),
             ),
@@ -217,10 +227,10 @@ class _PhotoGuidance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const guidance = [
-      'Add 2–5 clear photos',
-      'Include a front or product view',
-      'Add a close-up or detail view',
-      'If possible, show it being used or worn',
+      'Good lighting',
+      'Keep the product in focus',
+      'Show the full product',
+      '2–5 photos work best',
     ];
     return Container(
       width: double.infinity,

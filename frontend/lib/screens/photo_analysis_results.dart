@@ -11,10 +11,12 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
     super.key,
     required this.result,
     required this.localPhotos,
+    required this.productId,
   });
 
   final PhotoAnalysisResult result;
   final List<XFile> localPhotos;
+  final String productId;
 
   @override
   Widget build(BuildContext context) {
@@ -78,12 +80,15 @@ class PhotoAnalysisResultsPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const VoiceProductPage(),
+                        builder: (_) => VoiceProductPage(
+                          productId: productId,
+                          photoResult: result,
+                        ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.mic_none_outlined),
-                  label: const Text('Tell us about your product'),
+                  label: const Text('Continue →'),
                 ),
               ),
             ],
@@ -246,13 +251,13 @@ class _AnalyzedPhotoCard extends StatelessWidget {
 String _statusLabel(String status) {
   switch (status) {
     case 'enhanced':
-      return '✓ Enhanced';
+      return '✨ Improved by AI';
     case 'removed':
-      return '✕ Removed';
+      return '× Removed';
     case 'needs_retake':
-      return '⚠ Retake needed';
+      return '↻ Try another photo';
     default:
-      return '✓ Ready';
+      return '✓ Ready to use';
   }
 }
 

@@ -20,18 +20,32 @@ class FirestoreService {
 
   FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
+  /// Returns a new product document ID without writing an empty document.
+  String createProductId(String artisanId) => _db
+      .collection('artisans')
+      .doc(artisanId)
+      .collection('products')
+      .doc()
+      .id;
+
   /// Save or update an artisan profile.
   Future<void> saveArtisan({
     required String artisanId,
     required String name,
     String? phone,
     String? language,
+    String? craftType,
+    String? region,
+    bool onboardingComplete = false,
   }) async {
     try {
       await _db.collection('artisans').doc(artisanId).set({
         'name': name,
         ..._optionalText('phone', phone),
         ..._optionalText('language', language),
+        ..._optionalText('craftType', craftType),
+        ..._optionalText('region', region),
+        'onboardingComplete': onboardingComplete,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } on FirebaseException catch (error) {

@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../models/pricing_analysis.dart';
+import '../models/photo_analysis.dart';
 import '../models/voice_analysis.dart';
 import '../services/api_service.dart';
+import '../services/firestore_service.dart';
+import 'home.dart';
 
 class PricingPage extends StatefulWidget {
   const PricingPage({
     super.key,
     required this.productId,
     required this.product,
+    required this.voiceResult,
+    this.photoResult,
     this.apiService,
   });
 
   final String productId;
   final VoiceProductInfo product;
+  final VoiceAnalysisResult voiceResult;
+  final PhotoAnalysisResult? photoResult;
   final ApiService? apiService;
 
   @override
@@ -31,6 +38,7 @@ class _PricingPageState extends State<PricingPage> {
   late final ApiService _apiService = widget.apiService ?? ApiService();
   PricingAnalysisResult? _result;
   bool _isProcessing = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -73,6 +81,58 @@ class _PricingPageState extends State<PricingPage> {
     }
   }
 
+  Future<void> _saveProduct(PricedPricingResult priced) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    final pricing = priced.pricing;
+    final product = <String, dynamic>{
+      ...FirestoreService.voiceProductData(widget.voiceResult.product),
+      'pricing': {
+        'currency': pricing.currency,
+        'suggested_minimum': pricing.suggestedPrice.minimum,
+        'suggested_maximum': pricing.suggestedPrice.maximum,
+        'break_even_price': priced.financialBreakdown.breakEvenPrice,
+        'total_cost': pricing.costs.total,
+      },
+      if (widget.photoResult != null)
+        'photo_studio': {
+          'readiness': widget.photoResult!.media.photoReadiness.score,
+          'photo_count': widget.photoResult!.media.photoReadiness.totalUploaded,
+          'accepted': widget.photoResult!.media.photoReadiness.accepted,
+          'enhanced': widget.photoResult!.media.photoReadiness.enhanced,
+          'removed': widget.photoResult!.media.photoReadiness.removed,
+          'needs_retake':
+              widget.photoResult!.media.photoReadiness.needsRetake,
+        },
+      if (widget.photoResult != null)
+        'photos': [
+          for (final image in widget.photoResult!.media.images)
+            {
+              'image_id': image.imageId,
+              'original_path': image.originalPath,
+              if (image.finalPath != null) 'final_path': image.finalPath,
+              'status': image.status,
+            },
+        ],
+    };
+    try {
+      await FirestoreService().saveProduct(
+        artisanId: FirestoreService.defaultArtisanId,
+        productId: widget.productId,
+        product: product,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const ArtisanHomePage()),
+        (route) => false,
+      );
+    } on FirestoreServiceException catch (error) {
+      if (mounted) _showMessage(error.message);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   String? _validateNumber(
     String? value, {
     required String label,
@@ -99,7 +159,7 @@ class _PricingPageState extends State<PricingPage> {
     final result = _result;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Price your product'),
+        title: const Text('Price Recommendation'),
         leading: const BackButton(),
       ),
       body: SafeArea(
@@ -245,17 +305,41 @@ class _PricingPageState extends State<PricingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Price recommendation',
+          'Your suggested price',
           style: Theme.of(context).textTheme.headlineMedium
               ?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 8),
         Text(widget.product.name ?? 'Your product'),
         const SizedBox(height: 20),
-        _resultCard(
-          context,
-          'Suggested selling range',
-          '₹${pricing.suggestedPrice.minimum.toStringAsFixed(0)} – ₹${pricing.suggestedPrice.maximum.toStringAsFixed(0)}',
+        Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Suggested selling price',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '₹${pricing.suggestedPrice.minimum.toStringAsFixed(0)} – ₹${pricing.suggestedPrice.maximum.toStringAsFixed(0)}',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Based on material cost, labour, product details, and market trends.',
+                ),
+              ],
+            ),
+          ),
         ),
         _resultCard(
           context,
@@ -310,6 +394,16 @@ class _PricingPageState extends State<PricingPage> {
           (line) => Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text('• $line'),
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: _isSaving ? null : () => _saveProduct(priced),
+            icon: const Icon(Icons.save_outlined),
+            label: Text(_isSaving ? 'Saving product...' : 'Save Product'),
           ),
         ),
       ],
