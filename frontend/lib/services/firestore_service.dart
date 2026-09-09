@@ -34,12 +34,18 @@ class FirestoreService {
     required String name,
     String? phone,
     String? language,
+    String? craftType,
+    String? region,
+    bool onboardingComplete = false,
   }) async {
     try {
       await _db.collection('artisans').doc(artisanId).set({
         'name': name,
         ..._optionalText('phone', phone),
         ..._optionalText('language', language),
+        ..._optionalText('craftType', craftType),
+        ..._optionalText('region', region),
+        'onboardingComplete': onboardingComplete,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } on FirebaseException catch (error) {

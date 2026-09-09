@@ -11,13 +11,10 @@ app = FastAPI(title="SIH26090 Artisan Commerce API")
 if os.getenv("APP_ENV", "development").lower() == "development":
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:54874",
-            "http://127.0.0.1:54874",
-        ],
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
         allow_credentials=False,
-        allow_methods=["POST", "OPTIONS"],
-        allow_headers=["content-type"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
 app.include_router(photos_router)
